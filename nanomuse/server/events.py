@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import threading
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
@@ -52,6 +53,10 @@ class Timeline:
         self._flush_handle: asyncio.TimerHandle | None = None
         self._writing: asyncio.Future[Any] | None = None
         self._dirty = False
+        # 快照带有递增版本；锁内拒绝旧版本，避免退出保存后被后台旧快照覆盖。
+        self._write_lock = threading.Lock()
+        self._revision = 0
+        self._written_revision = -1
         self._load()
 
     def _load(self) -> None:
@@ -73,7 +78,14 @@ class Timeline:
             ensure_ascii=False,
         )
 
-    def _write(self, payload: str) -> None:
+    def _write(self, payload: str, revision: int) -> None:
+        with self._write_lock:
+            if revision <= self._written_revision:
+                return
+            self._write_snapshot(payload)
+            self._written_revision = revision
+
+    def _write_snapshot(self, payload: str) -> None:
         try:
             self.path.parent.mkdir(parents=True, exist_ok=True)
             tmp = self.path.with_suffix(".tmp")
@@ -81,13 +93,15 @@ class Timeline:
             tmp.replace(self.path)
         except OSError as exc:  # pragma: no cover
             logger.warning("could not save timeline {}: {}", self.path, exc)
+            raise
 
     def save(self) -> None:
         """Persist soon (on a loop) or now (off one)."""
+        self._revision += 1
         try:
             loop = asyncio.get_running_loop()
         except RuntimeError:
-            self._write(self._payload())
+            self._write(self._payload(), self._revision)
             return
         self._dirty = True
         if self._flush_handle is None:
@@ -102,16 +116,22 @@ class Timeline:
         if not self._dirty:
             return
         self._dirty = False
-        self._writing = loop.run_in_executor(None, self._write, self._payload())
+        self._writing = loop.run_in_executor(None, self._write, self._payload(), self._revision)
+        self._writing.add_done_callback(self._write_done)
+
+    def _write_done(self, future: asyncio.Future[Any]) -> None:
+        # 读取异常以避免后台任务静默失败，并保留脏标记供下次保存或退出重试。
+        if not future.cancelled() and future.exception() is not None:
+            self._dirty = True
 
     def flush(self) -> None:
         """Write now, e.g. at shutdown; a scheduled write is dropped in its favour."""
         if self._flush_handle is not None:
             self._flush_handle.cancel()
             self._flush_handle = None
-        if self._dirty or self._writing is None:
+        if self._written_revision < self._revision:
+            self._write(self._payload(), self._revision)
             self._dirty = False
-            self._write(self._payload())
 
     def add(self, event: dict[str, Any]) -> dict[str, Any]:
         event.setdefault("id", new_id())
@@ -180,8 +200,12 @@ class EventBus:
         for q in list(self._subscribers):
             try:
                 q.put_nowait(message)
-            except asyncio.QueueFull:  # slow client: drop it
+            except asyncio.QueueFull:
+                # 清除积压并通知发送端关闭连接，客户端重连后从 hello 恢复完整状态。
                 self._subscribers.discard(q)
+                while not q.empty():
+                    q.get_nowait()
+                q.put_nowait({"kind": "resync"})
 
 
 __all__ = ["MAIN_THREAD", "STOPPED_NOTICE", "EventBus", "Timeline", "new_id", "now_iso"]

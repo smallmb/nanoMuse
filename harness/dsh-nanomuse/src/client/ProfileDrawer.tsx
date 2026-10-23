@@ -14,7 +14,7 @@ import { createElement as h, Fragment, useEffect, useRef, useState, type FormEve
 import { call, type Translate, failureText } from './api.ts'
 import { Avatar } from './Avatar.tsx'
 import { profileBus, settingsBus, useProfileOpen } from './bus.ts'
-import { IconAlarm, IconBell, IconCheck, IconChevronDown, IconChevronRight, IconClock, IconClose, IconList, IconPencil, IconShare, IconShield, IconSparkle, IconSpinner, IconSquare } from './icons.tsx'
+import { IconAlarm, IconBell, IconBolt, IconCheck, IconChevronDown, IconChevronRight, IconClock, IconClose, IconFingerprint, IconHeart, IconList, IconPencil, IconShare, IconShield, IconSparkle, IconSpinner, IconSquare } from './icons.tsx'
 import { AvatarShareSheet } from './AvatarShare.tsx'
 import { studioBus } from './AvatarStudio.tsx'
 import { prefillComposer } from './composer.ts'
@@ -30,6 +30,7 @@ import { win } from './win.ts'
 const COMPUTER_SECTION = 'nanomuse-computer'
 
 type Tab = 'activity' | 'approvals' | 'reminders' | 'identity'
+const PROFILE_TABS: Tab[] = ['activity', 'approvals', 'reminders', 'identity']
 
 export interface ProfileDrawerProps {
   t: Translate
@@ -84,9 +85,9 @@ function Drawer({ t, stop, openSchedules, useSessions, useSessionStatus }: Profi
   const running = rooms.activity.find((r) => r.status === 'running' || r.status === 'waiting')
   // "online" as on the phone: the agent answers here; the account's state is a matter for Settings
   let status: ReactNode
-  if (running) status = h('span', { className: 'nm-pf-status nm-live' }, h(IconSpinner, { size: 13 }), statusWords(t, running))
-  else if (live.cloud.signedIn && !live.hub.connected) status = h('span', { className: 'nm-pf-status' }, h('span', { className: 'nm-status-dot nm-wait' }), t('pfOffline'))
-  else status = h('span', { className: 'nm-pf-status' }, h('span', { className: 'nm-status-dot nm-on' }), t('pfOnline'))
+  if (running) status = h('span', { className: 'nm-pf-status nm-live' }, h(IconSpinner, { size: 13 }), h('span', { className: 'nm-pf-status-label' }, statusWords(t, running)))
+  else if (live.cloud.signedIn && !live.hub.connected) status = h('span', { className: 'nm-pf-status' }, h('span', { className: 'nm-status-dot nm-wait' }), h('span', { className: 'nm-pf-status-label' }, t('pfOffline')))
+  else status = h('span', { className: 'nm-pf-status' }, h('span', { className: 'nm-pf-connected-mark' }, h(IconBolt, { size: 11 })), h('span', { className: 'nm-pf-status-label' }, t('pfOnline')))
   // the phone's "Change avatar": the words land in the chat and the avatar flow takes them from there
   const changeAvatar = () => {
     setMenu(false)
@@ -98,27 +99,28 @@ function Drawer({ t, stop, openSchedules, useSessions, useSessionStatus }: Profi
     { id: 'activity', label: t('pfActivity'), icon: h(IconList, { size: 17 }) },
     { id: 'approvals', label: t('pfApprovals'), icon: h(IconShield, { size: 17 }) },
     { id: 'reminders', label: t('pfDaily'), icon: h(IconClock, { size: 17 }) },
-    { id: 'identity', label: t('pfSoul'), icon: h(IconSparkle, { size: 17 }) },
+    { id: 'identity', label: t('pfSoul'), icon: h(IconFingerprint, { size: 17 }) },
   ]
 
-  let body: ReactNode
-  if (editing === 'name') body = h(NameEditor, { t, profile: live.profile, onDone: () => setEditing('none') })
-  else if (editing === 'look') body = h(LookEditor, { t, profile: live.profile, onDone: () => setEditing('none') })
-  else if (tab === 'activity') body = h(Activity, { t, name, stop, useSessions, open: (id) => setDetail(id) })
-  else if (tab === 'approvals') body = h(Approvals, { t, name, approvals: prefs.approvals, grants: live.grants })
-  else if (tab === 'reminders') body = h(Reminders, { t, name, openSchedules: () => { profileBus.close(); openSchedules() } })
-  else body = h(Identity, { t, name, onEditName: () => setEditing('name') })
+  // 四页并排留在同一条滑轨上，让旧页移出与新页进入同时发生，并保留各页滚动位置。
+  const page = (id: Tab): ReactNode => {
+    if (id === 'activity') return h(Activity, { t, name, stop, useSessions, open: (sessionId) => setDetail(sessionId) })
+    if (id === 'approvals') return h(Approvals, { t, name, approvals: prefs.approvals, grants: live.grants })
+    if (id === 'reminders') return h(Reminders, { t, name, openSchedules: () => { profileBus.close(); openSchedules() } })
+    return h(Identity, { t, name })
+  }
 
   return h('aside', { ref: panel, tabIndex: -1, className: 'nm-pf', role: 'complementary', 'aria-label': name },
     h('div', { className: 'nm-pf-top', 'data-window-drag': true },
-      h('button', { type: 'button', className: 'nm-icon-btn', 'aria-label': t('close'), onClick: () => profileBus.close() }, h(IconClose, { size: 16 })),
+      // 分享入口与关闭按钮共用顶栏，左右对齐并保持同一高度。
+      h('button', { type: 'button', className: 'nm-icon-btn', 'aria-label': t('acShareTitle'), title: t('acShareTitle'), onClick: () => { setMenu(false); setShare(true) } }, h(IconShare, { size: 16 })),
       h('span', { className: 'nm-pf-top-space' }),
-      h('button', { type: 'button', className: 'nm-icon-btn', 'aria-label': t('acShareTitle'), title: t('acShareTitle'), onClick: () => setShare(true) }, h(IconShare, { size: 16 }))),
+      h('button', { type: 'button', className: 'nm-icon-btn', 'aria-label': t('close'), onClick: () => profileBus.close() }, h(IconClose, { size: 16 }))),
     h('div', { className: 'nm-pf-head' },
       h('div', { className: 'nm-pf-face' },
         // the face itself opens the same menu as the pen (as on the phone): the look, the name, the studio
         h('button', { type: 'button', className: 'nm-pf-face-btn', 'aria-label': t('pfChangeLook'), 'aria-haspopup': 'menu', 'aria-expanded': menu, onClick: () => setMenu((m) => !m) },
-          h(Avatar, { size: 86, profile: live.profile, mood: running ? 'working' : 'idle' })),
+          h(Avatar, { size: 100, profile: live.profile, mood: running ? 'working' : 'idle' })),
         h('button', { type: 'button', className: 'nm-pf-pen', 'aria-label': t('pfEditName'), 'aria-haspopup': 'menu', 'aria-expanded': menu, onClick: () => setMenu((m) => !m) }, h(IconPencil, { size: 13 })),
         menu
           ? h('div', { className: 'nm-menu nm-pf-menu', role: 'menu' },
@@ -134,10 +136,22 @@ function Drawer({ t, stop, openSchedules, useSessions, useSessionStatus }: Profi
       h('div', { className: 'nm-pf-name' }, name),
       status),
     editing === 'none'
-      ? h('div', { className: 'nm-seg', role: 'tablist' }, tabs.map((item) =>
-          h('button', { key: item.id, type: 'button', role: 'tab', className: `nm-seg-btn${tab === item.id ? ' nm-active' : ''}`, 'aria-selected': tab === item.id, 'aria-label': item.label, title: item.label, onClick: () => setTab(item.id) }, item.icon)))
+      ? h('div', { className: 'nm-seg', role: 'tablist' },
+          h('span', { className: 'nm-pf-tab-indicator', 'aria-hidden': true, style: { transform: `translateX(${PROFILE_TABS.indexOf(tab) * 100}%)` } }),
+          tabs.map((item) => h('button', { key: item.id, id: `nm-pf-tab-${item.id}`, type: 'button', role: 'tab', className: `nm-seg-btn${tab === item.id ? ' nm-active' : ''}`, 'aria-selected': tab === item.id, 'aria-controls': `nm-pf-page-${item.id}`, 'aria-label': item.label, title: item.label, onClick: () => setTab(item.id) }, item.icon)))
       : null,
-    h('div', { className: 'nm-pf-body' }, body),
+    h('div', { className: 'nm-pf-viewport' },
+      editing !== 'none'
+        ? h('div', { className: `nm-pf-body nm-pf-body-${tab}` }, editing === 'name'
+            ? h(NameEditor, { t, profile: live.profile, onDone: () => setEditing('none') })
+            : h(LookEditor, { t, profile: live.profile, onDone: () => setEditing('none') }))
+        : h('div', { className: 'nm-pf-pages', style: { transform: `translateX(${-PROFILE_TABS.indexOf(tab) * 100}%)` } },
+            tabs.map((item) => h('section', {
+              key: item.id, id: `nm-pf-page-${item.id}`, role: 'tabpanel', 'aria-labelledby': `nm-pf-tab-${item.id}`,
+              'aria-hidden': tab !== item.id, className: `nm-pf-body nm-pf-page nm-pf-body-${item.id}`,
+              // 非当前页仍参与滑动画面，但不接受焦点或辅助技术访问。
+              ref: (element: HTMLElement | null): void => { if (element) element.inert = tab !== item.id },
+            }, page(item.id))))),
     share ? h(AvatarShareSheet, { t, name, onClose: () => setShare(false) }) : null,
     detail ? h(TaskDetail, { t, sessionId: detail, useSessions, onClose: () => setDetail(null) }) : null,
     clipChooser.element)
@@ -218,23 +232,32 @@ function Activity({ t, name, stop, useSessions, open }: { t: Translate; name: st
     list.push(row)
     groups.set(label, list)
   }
-  const icon = (row: Row) => row.state === 'live' ? h(IconSpinner, { size: 18 }) : row.state === 'avatar' ? h(IconSparkle, { size: 18 }) : h(IconCheck, { size: 18 })
-  return h('div', { className: 'nm-pf-rows' }, [...groups].map(([label, items]) => h('div', { key: label },
+  const icon = (row: Row) => {
+    if (row.state === 'live') return h(IconSpinner, { size: 18 })
+    if (row.state === 'avatar') return h(IconSparkle, { size: 18 })
+    if (row.state === 'notice') return h(IconBell, { size: 18 })
+    return h('span', { className: `nm-pf-outcome${row.state === 'error' ? ' nm-error' : ''}` }, row.state === 'error' ? h(IconClose, { size: 12 }) : h(IconCheck, { size: 12 }))
+  }
+  return h('div', { className: 'nm-pf-rows' }, [...groups].map(([label, items]) => h('div', { key: label, className: 'nm-pf-day-group' },
     h('div', { className: 'nm-pf-day' }, label),
-    items.map((r, i) => h('div', { key: `${r.id}-${r.at}-${i}`, className: `nm-pf-row nm-pf-task${r.id ? ' nm-clickable' : ''}`, role: r.id ? 'button' : undefined, tabIndex: r.id ? 0 : undefined, onClick: () => { if (r.id) open(r.id) }, onKeyDown: (e: KeyboardEvent) => { if (r.id && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); open(r.id) } } },
-      h('span', { className: `nm-pf-row-icon${r.state === 'live' ? ' nm-live' : r.state === 'error' ? ' nm-err' : ''}` }, icon(r)),
-      h('div', { className: 'nm-pf-row-main' },
-        h('div', { className: 'nm-pf-row-title' }, r.title),
-        r.sub ? h('div', { className: 'nm-pf-row-sub' }, r.sub) : null),
-      r.state === 'live' && r.id
+    items.map((r, i) => {
+      const stopButton = r.state === 'live' && r.id
         ? h('button', { type: 'button', className: 'nm-pf-stop', title: t('capsuleStop'), 'aria-label': t('capsuleStop'), disabled: stopping === r.id, onClick: (e: MouseEvent) => { e.stopPropagation(); setStopping(r.id); void stop(r.id).finally(() => setStopping(null)) } }, h(IconSquare, { size: 14 }))
-        : h('span', { className: 'nm-pf-row-time' }, clockLabel(r.at, rooms.lang)))))))
+        : null
+      return h('div', { key: `${r.id}-${r.at}-${i}`, className: `nm-pf-row nm-pf-task${r.id ? ' nm-clickable' : ''}`, role: r.id ? 'button' : undefined, tabIndex: r.id ? 0 : undefined, onClick: () => { if (r.id) open(r.id) }, onKeyDown: (e: KeyboardEvent) => { if (r.id && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); open(r.id) } } },
+        h('span', { className: `nm-pf-row-icon${r.state === 'live' ? ' nm-live' : r.state === 'error' ? ' nm-err' : ''}` }, icon(r)),
+        h('div', { className: 'nm-pf-row-main' },
+          h('div', { className: 'nm-pf-row-title' }, r.title),
+          r.sub ? h('div', { className: 'nm-pf-row-sub' }, r.sub) : null,
+          !stopButton ? h('span', { className: 'nm-pf-row-time' }, clockLabel(r.at, rooms.lang)) : null),
+        stopButton)
+    }))))
 }
 
 function Approvals({ t, name, approvals, grants }: { t: Translate; name: string; approvals: { at: number; toolName: string; reason: string; outcome: 'allowed' | 'rejected' }[]; grants: { id: string; target: string; at: number }[] }): ReactNode {
   const [openRow, setOpenRow] = useState<number | null>(null)
   const openPermissions = () => { profileBus.close(); settingsBus.openSection?.(COMPUTER_SECTION) }
-  const manage = h('div', { className: 'nm-pf-row nm-clickable', role: 'button', tabIndex: 0, onClick: openPermissions, onKeyDown: (e: { key: string; preventDefault(): void }) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPermissions() } } },
+  const manage = h('div', { className: 'nm-pf-row nm-pf-manage nm-clickable', role: 'button', tabIndex: 0, onClick: openPermissions, onKeyDown: (e: { key: string; preventDefault(): void }) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPermissions() } } },
     h('span', { className: 'nm-pf-row-icon' }, h(IconShield, { size: 18 })),
     h('div', { className: 'nm-pf-row-main' }, h('div', { className: 'nm-pf-row-title' }, t('pfManagePermissions'))),
     h('span', { className: 'nm-pf-row-chev' }, h(IconChevronRight, { size: 16 })))
@@ -242,7 +265,7 @@ function Approvals({ t, name, approvals, grants }: { t: Translate; name: string;
   const standing = grants.length
     ? h(Fragment, null,
         h('div', { className: 'nm-pf-day' }, t('pfApprovalsAlways')),
-        grants.map((g) => h('div', { key: g.id, className: 'nm-pf-row' },
+        grants.map((g) => h('div', { key: g.id, className: 'nm-pf-row nm-pf-grant' },
           h('span', { className: 'nm-pf-row-icon' }, h(IconCheck, { size: 18 })),
           h('div', { className: 'nm-pf-row-main' },
             h('div', { className: 'nm-pf-row-title' }, t('pfAlwaysAllowed', { target: g.target.replace(/^computer_app:/, '') })),
@@ -259,7 +282,7 @@ function Approvals({ t, name, approvals, grants }: { t: Translate; name: string;
       h('div', { className: 'nm-pf-row-main' },
         h('div', { className: 'nm-pf-row-title' }, firstWords(a.reason || a.toolName, openRow === i ? 400 : 60)),
         h('div', { className: 'nm-pf-row-sub' }, `${a.outcome === 'allowed' ? t('pfAllowed') : t('pfDenied')} · ${ago(t, a.at)}`)),
-      h('span', { className: `nm-pf-row-chev${openRow === i ? ' nm-open' : ''}` }, h(IconChevronDown, { size: 16 })))))
+      h('span', { className: `nm-pf-row-chev${openRow === i ? ' nm-open' : ''}` }, h(IconChevronDown, { size: 12 })))))
 }
 
 function firstWords(text: string, n: number): string {
@@ -278,7 +301,7 @@ function Reminders({ t, name, openSchedules }: { t: Translate; name: string; ope
     if (Number.isFinite(next)) return `${dayLabel(t, next, rooms.lang)}, ${clockLabel(next, rooms.lang)}`
     return a.rule
   }
-  const row = (entry: { goal: string; automation: GoalAutomation }, icon: ReactNode) => h('div', { key: entry.automation.id, className: 'nm-pf-row' },
+  const row = (entry: { goal: string; automation: GoalAutomation }, icon: ReactNode, kind: 'once' | 'recurring') => h('div', { key: entry.automation.id, className: `nm-pf-row nm-pf-reminder nm-pf-reminder-${kind}` },
     h('span', { className: 'nm-pf-row-icon' }, icon),
     h('div', { className: 'nm-pf-row-main' },
       h('div', { className: 'nm-pf-row-title' }, entry.automation.title || entry.goal),
@@ -290,13 +313,13 @@ function Reminders({ t, name, openSchedules }: { t: Translate; name: string; ope
   }
   return h('div', { className: 'nm-pf-rows' },
     once.length ? h('div', { className: 'nm-pf-day' }, t('pfRemindersOnce')) : null,
-    once.map((entry) => row(entry, h(IconBell, { size: 18 }))),
+    once.map((entry) => row(entry, h(IconBell, { size: 18 }), 'once')),
     recurring.length ? h('div', { className: 'nm-pf-day' }, t('pfRemindersDaily')) : null,
-    recurring.map((entry) => row(entry, h(IconAlarm, { size: 18 }))),
+    recurring.map((entry) => row(entry, h(IconAlarm, { size: 18 }), 'recurring')),
     h('div', { className: 'nm-pf-foot' }, h('button', { type: 'button', className: 'nm-pill nm-pill-ghost nm-pill-sm', onClick: openSchedules }, t('pfManageRoutines'))))
 }
 
-function Identity({ t, name, onEditName }: { t: Translate; name: string; onEditName(): void }): ReactNode {
+function Identity({ t, name }: { t: Translate; name: string }): ReactNode {
   const rooms = useRooms()
   const live = useLive()
   const memoryAt = rooms.memory.reduce((max, m) => Math.max(max, m.at), 0)
@@ -304,20 +327,23 @@ function Identity({ t, name, onEditName }: { t: Translate; name: string; onEditN
   const openDoc = (doc: 'identity' | 'soul' | 'memory') => { win.openDoc({ kind: 'own', doc }); win.touchRecent(`own:${doc}`, doc === 'identity' ? 'IDENTITY.md' : doc === 'soul' ? 'SOUL.md' : 'MEMORY.md') }
   return h('div', { className: 'nm-pf-stack' },
     h('div', { className: 'nm-pf-card' },
-      h('div', { className: 'nm-pf-card-name' }, name),
-      live.profile.description ? h('div', { className: 'nm-pf-card-sub' }, live.profile.description) : null,
+      h('div', { className: 'nm-pf-card-main' },
+        h('div', { className: 'nm-pf-card-name' }, name),
+        live.profile.description ? h('div', { className: 'nm-pf-card-sub' }, live.profile.description) : null),
       h('div', { className: 'nm-pf-card-actions' },
-        h('button', { type: 'button', className: 'nm-pill nm-pill-ghost nm-pill-sm nm-pill-wide', onClick: () => openDoc('identity') }, h(IconPencil, { size: 14 }), t('pfEdit')),
-        h('button', { type: 'button', className: 'nm-pill nm-pill-ghost nm-pill-sm', onClick: onEditName }, t('pfEditName')))),
-    h('button', { type: 'button', className: 'nm-pf-doc nm-pf-doc-soul', onClick: () => openDoc('soul') },
-      h('div', { className: 'nm-pf-doc-title' }, 'SOUL'),
-      h('div', { className: 'nm-pf-doc-sub' }, t('pfDocOpen')),
-      h('div', { className: 'nm-pf-doc-foot' }, h('span', null, stamp(rooms.docs.soulAt)), h('span', { 'aria-hidden': true }, '♥'))),
-    h('button', { type: 'button', className: 'nm-pf-doc nm-pf-doc-memory', onClick: () => openDoc('memory') },
-      h('div', { className: 'nm-pf-doc-title' }, t('pfMemory')),
-      h('div', { className: 'nm-pf-doc-sub' }, rooms.memory.length ? t('pfMemoryCount', { n: rooms.memory.length }) : t('pfDocOpen')),
-      h('div', { className: 'nm-pf-doc-foot' }, h('span', null, stamp(memoryAt)), h('span', { 'aria-hidden': true }, '♥'))),
-    h('p', { className: 'nm-pf-empty' }, t('pfHandleWithCare', { name })),
+        // 与参考面板一致，身份编辑占满一行；改名入口仍保留在头像菜单中。
+        h('button', { type: 'button', className: 'nm-pill nm-pill-ghost nm-pill-sm nm-pill-wide', onClick: () => openDoc('identity') }, h(IconPencil, { size: 14 }), t('pfEdit')))),
+    h('div', { className: 'nm-pf-doc-grid' },
+      h('button', { type: 'button', className: 'nm-pf-doc nm-pf-doc-soul', onClick: () => openDoc('soul') },
+        h('div', null,
+          h('div', { className: 'nm-pf-doc-title' }, 'SOUL'),
+          h('div', { className: 'nm-pf-doc-sub' }, t('pfDocOpen'))),
+        h('div', { className: 'nm-pf-doc-foot' }, h('span', null, stamp(rooms.docs.soulAt)), h('span', { 'aria-hidden': true }, h(IconHeart, { size: 18, filled: true })))),
+      h('button', { type: 'button', className: 'nm-pf-doc nm-pf-doc-memory', onClick: () => openDoc('memory') },
+        h('div', null,
+          h('div', { className: 'nm-pf-doc-title' }, t('pfMemory')),
+          h('div', { className: 'nm-pf-doc-sub' }, rooms.memory.length ? t('pfMemoryCount', { n: rooms.memory.length }) : t('pfDocOpen'))),
+        h('div', { className: 'nm-pf-doc-foot' }, h('span', null, stamp(memoryAt)), h('span', { 'aria-hidden': true }, h(IconHeart, { size: 18, filled: true }))))),
     live.profile.avatar === 'face' ? h('p', { className: 'nm-pf-empty' }, t('pfFaceNote')) : null)
 }
 

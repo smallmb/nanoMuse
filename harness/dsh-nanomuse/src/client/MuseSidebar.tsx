@@ -1,14 +1,7 @@
 /**
- * The Muse-shaped left column in the harness's `sidebar` seat: an icon rail —
- * Chats, Search, the rooms (Feed, Ideas, Goals, Library), Devices, and a menu
- * in the corner for settings, shortcuts, the harness's Schedules and plugins
- * and reporting a problem — beside the chats column (search, the main chat,
- * the side chats). Collapsed, only the rail remains. The seven child seats the
- * stock sidebar declares are declared here too, so every occupant of them —
- * the brand mark, the panel glyphs, the browser, the settings shell, footer
- * actions — mounts exactly as before; only the frame around them is ours, and
- * the harness's workspace browser takes the column's place when the person
- * turns the Developer switch on.
+ * 桌面侧栏：聊天、搜索、目标、点子、资源库、动态依次位于中间。
+ * 顶部显示形象，底部菜单承载设置等入口，展开时旁边显示会话列表。
+ * 保留宿主原有插槽及其生命周期，开发者模式仍使用宿主工作区浏览器。
  */
 import { createElement as h, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { Translate } from './api.ts'
@@ -16,7 +9,7 @@ import { Avatar } from './Avatar.tsx'
 import { Toast } from '@deepseek-ai/dsh-client-ui-primitives'
 import { aboutBus } from './About.tsx'
 import { bridge, openLink } from './bridge.ts'
-import { IconBulb, IconCalendar, IconChat, IconClose, IconFeed, IconDoc, IconMenu, IconPanelLeft, IconPin, IconPlus, IconPuzzle, IconSearch, IconShapes, IconTarget, IconBug, IconDownload, IconInfo, IconKeyboard, IconSettings } from './icons.tsx'
+import { IconCalendar, IconClose, IconDoc, IconMenu, IconPanelLeft, IconPin, IconPlus, IconPuzzle, IconShapes, IconTarget, IconBug, IconDownload, IconInfo, IconKeyboard, IconSettings } from './icons.tsx'
 import { openShortcutsReference, pressSettingsChord } from './keys.ts'
 import { useLive } from './live.ts'
 import { MuseChats, type ChatActions, type UseSessionList, type UseStatusMap, type UseWorkspaceList } from './MuseChats.tsx'
@@ -32,7 +25,7 @@ const SCHEDULES_PANEL = 'schedules'
 const PLUGINS_PANEL = 'plugins'
 
 const COLLAPSE_SETTLE_MS = 150
-const RAIL = 66
+const RAIL = 78
 
 export interface PanelMeta {
   id: string
@@ -70,6 +63,7 @@ export interface MuseSidebarProps {
 
 interface RailButtonProps {
   label: string
+  className?: string | undefined
   active?: boolean | undefined
   expanded?: boolean | undefined
   dot?: boolean | undefined
@@ -78,10 +72,10 @@ interface RailButtonProps {
   buttonRef?: ((el: HTMLButtonElement | null) => void) | undefined
 }
 
-function RailButton({ label, active, expanded, dot, onClick, children, buttonRef }: RailButtonProps): ReactNode {
+function RailButton({ label, className, active, expanded, dot, onClick, children, buttonRef }: RailButtonProps): ReactNode {
   return h('button', {
     type: 'button',
-    className: 'nm-rail-btn',
+    className: `nm-rail-btn${className ? ` ${className}` : ''}`,
     title: label,
     'aria-label': label,
     'aria-current': active ? 'page' : undefined,
@@ -236,16 +230,18 @@ export function MuseSidebar(props: MuseSidebarProps): ReactNode {
   const rail = h('nav', { className: 'nm-rail', 'aria-label': t('railLabel') },
     h('div', { className: 'nm-rail-top', 'data-window-drag': true }),
     h('div', { className: 'nm-hidden' }, renderSlot('sidebar.brand.mark', { size: 36 })),
-    faceOnRail ? h(RailButton, { label: live.profile.name || t('railProfile'), onClick: openProfile }, h('span', { className: `nm-rail-face${busy ? ' nm-live' : ''}` }, h(Avatar, { size: 28, profile: live.profile, mood: busy ? 'working' : 'idle' }))) : null,
-    h(RailButton, { label: t('railChats'), active: active === null, dot: busy, onClick: showChats }, h(IconChat, { size: 21 })),
-    h(RailButton, { label: withKeys(t('railSearch'), searchShortcut?.keys), onClick: search }, h(IconSearch, { size: 21 })),
-    // Muse's rooms, in Muse's order: Feed, Ideas, Goals, Library.
-    h(RailButton, { label: t('railFeed'), active: active === FEED_PANEL, dot: freshFeed && active !== FEED_PANEL, onClick: () => selectPanel(FEED_PANEL) }, h(IconFeed, { size: 21 })),
-    h(RailButton, { label: t('railIdeas'), active: active === IDEAS_PANEL, onClick: () => selectPanel(IDEAS_PANEL) }, h(IconBulb, { size: 21 })),
-    h(RailButton, { label: t('railGoals'), active: active === GOALS_PANEL, onClick: () => selectPanel(GOALS_PANEL) }, h(IconTarget, { size: 21 })),
-    h(RailButton, { label: t('railLibrary'), active: active === LIBRARY_PANEL, onClick: () => selectPanel(LIBRARY_PANEL) }, h(IconShapes, { size: 21 })),
-    // Recent documents (IDENTITY.md, a Library text…): one glyph each, a menu on right-click.
-    recent.length ? h('div', { className: 'nm-rail-recent', role: 'group', 'aria-label': t('recentDocs') },
+    faceOnRail ? h(RailButton, { label: live.profile.name || t('railProfile'), className: 'nm-rail-avatar', onClick: openProfile }, h('span', { className: `nm-rail-face${busy ? ' nm-live' : ''}` }, h(Avatar, { size: 48, profile: live.profile, mood: busy ? 'working' : 'idle' }))) : null,
+    // 功能入口和最近文档作为一组，在头像与底部菜单之间垂直居中。
+    h('div', { className: 'nm-rail-tabs' },
+      // 按参考顺序排列，透明位图通过遮罩继承主题色与选中状态。
+      h(RailButton, { label: t('railChats'), active: active === null, dot: busy, onClick: showChats }, h('span', { className: 'nm-rail-icon nm-rail-icon-chat', 'aria-hidden': true })),
+      h(RailButton, { label: withKeys(t('railSearch'), searchShortcut?.keys), onClick: search }, h('span', { className: 'nm-rail-icon nm-rail-icon-search', 'aria-hidden': true })),
+      h(RailButton, { label: t('railGoals'), active: active === GOALS_PANEL, onClick: () => selectPanel(GOALS_PANEL) }, h(IconTarget, { size: 26, stroke: 2 })),
+      h(RailButton, { label: t('railIdeas'), active: active === IDEAS_PANEL, onClick: () => selectPanel(IDEAS_PANEL) }, h('span', { className: 'nm-rail-icon nm-rail-icon-ideas', 'aria-hidden': true })),
+      h(RailButton, { label: t('railLibrary'), active: active === LIBRARY_PANEL, onClick: () => selectPanel(LIBRARY_PANEL) }, h(IconShapes, { size: 24, stroke: 2 })),
+      h(RailButton, { label: t('railFeed'), active: active === FEED_PANEL, dot: freshFeed && active !== FEED_PANEL, onClick: () => selectPanel(FEED_PANEL) }, h('span', { className: 'nm-rail-icon nm-rail-icon-feed', 'aria-hidden': true })),
+      // 最近文档沿用原入口，仍可通过右键菜单管理。
+      recent.length ? h('div', { className: 'nm-rail-recent', role: 'group', 'aria-label': t('recentDocs') },
       recent.map((doc) => h('button', {
         key: doc.key,
         type: 'button',
@@ -254,8 +250,7 @@ export function MuseSidebar(props: MuseSidebarProps): ReactNode {
         'aria-label': doc.name,
         onClick: () => openRecent(doc),
         onContextMenu: (event: { preventDefault(): void; currentTarget: HTMLElement }) => { event.preventDefault(); setDocMenu({ anchor: event.currentTarget, doc }) },
-      }, h(IconDoc, { size: 20 }), h('span', { className: 'nm-rail-doc-tag' }, docTag(doc.name))))) : null,
-    h('div', { className: 'nm-rail-spacer' }),
+      }, h(IconDoc, { size: 20 }), h('span', { className: 'nm-rail-doc-tag' }, docTag(doc.name))))) : null),
     collapsed ? h(RailButton, { label: t('railNew'), onClick: startSession }, h(IconPlus, { size: 21 })) : null,
     h(RailButton, { label: t('railMore'), expanded: menuAnchor !== null, dot: updateDot, onClick: () => setMenuAnchor((current) => (current ? null : menuButton.current)), buttonRef: (el) => { menuButton.current = el } }, h(IconMenu, { size: 21 })),
     // The settings shell lives in this seat: its trigger is hidden here (the

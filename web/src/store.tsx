@@ -85,6 +85,8 @@ export interface Stream {
 export interface AppState {
   connected: boolean;
   loaded: boolean;
+  /** 每次完整状态到达后递增，用于重载断线期间遗漏的对话。 */
+  snapshotVersion: number;
   authError: boolean;
   /** the runtime behind this page has ended (the gateway closed the socket for good) */
   gone: boolean;
@@ -210,6 +212,7 @@ function liteFromUrl(): boolean {
 const initial: AppState = {
   connected: false,
   loaded: false,
+  snapshotVersion: 0,
   authError: false,
   gone: false,
   error: null,
@@ -320,6 +323,7 @@ function reducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         loaded: true,
+        snapshotVersion: state.snapshotVersion + 1,
         authError: false,
         version: s.version,
         profile: s.profile,
@@ -664,14 +668,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (state.loaded) void loadEvents(state.activeThread);
-  }, [state.loaded, state.activeThread, loadEvents]);
-
-  // Reload the current thread after a reconnect so nothing is missed.
-  const wasConnected = useRef(false);
-  useEffect(() => {
-    if (state.connected && wasConnected.current && state.loaded) void loadEvents(state.activeThread);
-    wasConnected.current = state.connected;
-  }, [state.connected, state.loaded, state.activeThread, loadEvents]);
+    // hello 每次都会携带最新快照；等待它到达后再补历史，避免只在连接打开时抢先读取。
+  }, [state.loaded, state.activeThread, state.snapshotVersion, loadEvents]);
 
   const refreshGoals = useCallback(async () => {
     try {

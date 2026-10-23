@@ -12,6 +12,8 @@
  * is read here too.
  */
 
+import { feedDetails, feedUrl, type FeedSource } from './feed.ts'
+
 export const FENCE_GOAL = 'nanomuse-goal'
 export const FENCE_GOAL_UPDATE = 'nanomuse-goal-update'
 export const FENCE_FEED = 'nanomuse-feed'
@@ -165,6 +167,9 @@ export interface FeedDraft {
   type: (typeof FEED_TYPES)[number]
   emoji: string
   source: string[]
+  sources?: FeedSource[]
+  recommendationReason?: string
+  image?: string
 }
 
 export function parseFeedDraft(json: string): FeedDraft | undefined {
@@ -183,6 +188,9 @@ export function parseFeedDraft(json: string): FeedDraft | undefined {
     type: (FEED_TYPES as readonly string[]).includes(type) ? (type as FeedDraft['type']) : 'note',
     emoji: str(o.emoji).slice(0, 4),
     source: source.slice(0, 4),
+    ...(o.sources ? { sources: feedDetails({ title, body, sources: o.sources }).sources } : {}),
+    ...(o.recommendationReason || o.recommendation_reason ? { recommendationReason: feedDetails(o).recommendationReason } : {}),
+    ...(o.image ? { image: feedUrl(o.image) } : {}),
   }
 }
 

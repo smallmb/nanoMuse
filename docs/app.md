@@ -11,6 +11,8 @@
 
 `nanomuse serve` runs an always-on agent and serves the phone app from the same process. The app is a React single-page app built into `nanomuse/server/static/` and shipped inside the Python package; the server is FastAPI with a WebSocket for live events.
 
+Timeline saves keep the latest snapshot when a background write overlaps shutdown. If a browser falls too far behind the event stream, the runtime closes its WebSocket with code 1013; the browser reconnects and reloads the current state and conversation.
+
 ```bash
 nanomuse serve                      # http://127.0.0.1:8787, this machine only
 nanomuse serve --host 0.0.0.0       # also reachable from your phone on the same network

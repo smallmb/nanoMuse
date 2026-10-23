@@ -10,18 +10,48 @@
  * conversation with the idea's words. ⋯ on a row hides it.
  */
 import { failureText } from './api.ts'
+import { usePageScroll } from './page-cache.ts'
 import { createElement as h, useMemo, useState, type ReactNode } from 'react'
 import type { Translate } from './api.ts'
 import { prefillComposer } from './composer.ts'
-import { IconAlarm, IconBulb, IconCheckCircle, IconMessage, IconTarget } from './icons.tsx'
+import { IconAlarm, IconAsset, IconBulb, IconCheckCircle, IconMessage, IconTarget } from './icons.tsx'
 import { IDEAS_PANEL } from './panels.ts'
 import { nav, roomsCall, useRooms, type Idea } from './rooms.ts'
 import { peekWin } from './win.ts'
 import { Empty, MoreButton, RoomToggle, Sheet } from './ui.tsx'
 
+// 按点子的稳定编号选择语义对应的共用图标，未知的新点子使用灯泡。
+const IDEA_ICONS: Record<string, string> = {
+  'travel/train-watch': 'locationPin',
+  'travel/trip-plan': 'map',
+  'travel/commute-brief': 'compass',
+  'travel/parcel-track': 'shoppingBag',
+  'work/meeting-prep': 'clipboard',
+  'work/weekly-review': 'chartBar',
+  'work/inbox-triage': 'envelope',
+  'work/doc-digest': 'article',
+  'life/price-watch': 'shoppingCart',
+  'life/photo-sort': 'image',
+  'life/meal-log': 'heart',
+  'life/subscriptions': 'creditCard',
+  'learn/daily-words': 'bookOpen',
+  'learn/study-plan': 'mortarboard',
+  'learn/explain': 'lightbulb',
+  'learn/reading-notes': 'bookClosed',
+  'family/birthdays': 'cake',
+  'family/keep-in-touch': 'speechBubble',
+  'family/family-calendar': 'calendar',
+  'family/gift-ideas': 'gift',
+  'more/id-renewal': 'document',
+  'more/personality-quiz': 'user',
+  'more/event-plan': 'users3',
+  'more/phone-cleanup': 'laptopPhone',
+}
+
 export function makeIdeasPanel(t: Translate) {
   return function IdeasPanel(): ReactNode {
     const rooms = useRooms()
+    const scroll = usePageScroll('ideas')
     const [open, setOpen] = useState<Idea | undefined>()
     const [error, setError] = useState<string | undefined>()
     const [starting, setStarting] = useState(false)
@@ -72,12 +102,13 @@ export function makeIdeasPanel(t: Translate) {
     const tryIt = (idea: Idea) => { if ((idea.kind ?? 'chat') === 'chat') sendToChat(idea); else start(idea) }
     const dismiss = (idea: Idea) => { roomsCall('ideas/dismiss', { id: idea.id }).catch(fail) }
 
-    return h('div', { className: 'nm-room' },
+    return h('div', { className: 'nm-room nm-room-with-chat' },
       h('div', { className: 'nm-room-top', 'data-window-drag': true }),
+      // 会话开关独立于标题，始终锚定页面左上角。
+      h(RoomToggle, { t, panel: IDEAS_PANEL }),
       h('div', { className: 'nm-room-head' },
-        h(RoomToggle, { t, panel: IDEAS_PANEL }),
         h('h1', { className: 'nm-room-title' }, t('railIdeas'))),
-      h('div', { className: 'nm-room-body' },
+      h('div', { className: 'nm-room-body', ref: scroll },
         h('div', { className: 'nm-room-inner nm-ideas' },
           error ? h('div', { className: 'nm-room-error' }, error) : null,
           toast ? h('div', { className: 'nm-room-toast', role: 'status' }, toast) : null,
@@ -98,7 +129,7 @@ function kindOf(idea: Idea): 'chat' | 'routine' | 'goal' {
 function IdeaRow({ t, idea, onOpen, onDismiss, onStart }: { t: Translate; idea: Idea; onOpen(): void; onDismiss(): void; onStart(): void }): ReactNode {
   const kind = kindOf(idea)
   return h('div', { className: 'nm-idea', role: 'button', tabIndex: 0, 'aria-label': idea.title, onClick: onOpen, onKeyDown: (e: KeyboardEvent) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onOpen() } } },
-    h('div', { className: 'nm-idea-mark', 'aria-hidden': true }, idea.emoji || '💡'),
+    h('div', { className: 'nm-idea-mark', 'aria-hidden': true }, h(IconAsset, { name: IDEA_ICONS[idea.id] ?? 'lightbulb', size: 24 })),
     h('div', { className: 'nm-idea-main' },
       h('div', { className: 'nm-idea-title' }, idea.title),
       idea.detail ? h('div', { className: 'nm-idea-detail' }, idea.detail) : null),
@@ -125,7 +156,7 @@ function IdeaCard({ t, idea, starting, onClose, onChat, onStart }: { t: Translat
         ? h('button', { type: 'button', className: 'nm-pill nm-pill-sm', onClick: () => { nav.openSession(idea.started!); nav.split(IDEAS_PANEL); onClose() } }, t('ideaOpenChat'))
         : h('button', { type: 'button', className: 'nm-pill nm-pill-sm', disabled: starting, onClick: kind === 'chat' ? onChat : onStart }, starting ? t('ideaStarting') : primary)) },
     h('div', { className: 'nm-idea-card' },
-      h('div', { className: 'nm-idea-hero' }, h('span', { className: 'nm-idea-hero-mark', 'aria-hidden': true }, idea.emoji || '💡')),
+      h('div', { className: 'nm-idea-hero' }, h('span', { className: 'nm-idea-hero-mark', 'aria-hidden': true }, h(IconAsset, { name: IDEA_ICONS[idea.id] ?? 'lightbulb', size: 40 }))),
       idea.detail ? h('p', { className: 'nm-sheet-lead' }, idea.detail) : null,
       h('div', { className: 'nm-idea-kind' }, h(KindIcon, { size: 15 }), h('span', null, kindText)),
       h('section', null, h('h3', null, t('ideaPrompt')), h('blockquote', { className: 'nm-idea-prompt' }, idea.prompt))))

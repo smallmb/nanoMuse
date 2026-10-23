@@ -23,7 +23,7 @@ export interface MenuChoice {
 }
 
 /** A menu under (or over) its anchor, flush with the anchor's right edge when there is no room to the right. */
-export function PopMenu({ anchor, items, onClose }: { anchor: HTMLElement; items: (MenuChoice | 'sep')[]; onClose(): void }): ReactNode {
+export function PopMenu({ anchor, items, onClose, header }: { anchor: HTMLElement; items: (MenuChoice | 'sep')[]; onClose(): void; header?: ReactNode }): ReactNode {
   const menu = useRef<HTMLDivElement>(null)
   const rect = anchor.getBoundingClientRect()
   useEffect(() => {
@@ -53,6 +53,7 @@ export function PopMenu({ anchor, items, onClose }: { anchor: HTMLElement; items
     ...(below ? { top: rect.bottom + 4 } : { bottom: window.innerHeight - rect.top + 4 }),
   }
   return h('div', { ref: menu, className: 'nm-menu', role: 'menu', style },
+    header ?? null,
     items.map((item, index) => item === 'sep'
       ? h('div', { key: `sep-${index}`, className: 'nm-menu-sep', role: 'separator' })
       : h('button', { key: item.id, type: 'button', role: 'menuitem', className: `nm-menu-item${item.danger ? ' nm-danger' : ''}`, onClick: () => { onClose(); item.onSelect() } },
@@ -61,7 +62,7 @@ export function PopMenu({ anchor, items, onClose }: { anchor: HTMLElement; items
 }
 
 /** The ⋯ button with its menu; `quiet` shows it on the row's hover only. */
-export function MoreButton({ label, items, quiet, size = 30, icon }: { label: string; items: (MenuChoice | 'sep')[]; quiet?: boolean; size?: number; icon?: ReactNode }): ReactNode {
+export function MoreButton({ label, items, quiet, size = 36, icon, header }: { label: string; items: (MenuChoice | 'sep')[]; quiet?: boolean; size?: number; icon?: ReactNode; header?: ReactNode }): ReactNode {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const button = useRef<HTMLButtonElement | null>(null)
   return h(Fragment, null,
@@ -76,7 +77,7 @@ export function MoreButton({ label, items, quiet, size = 30, icon }: { label: st
       'aria-expanded': anchor !== null,
       onClick: (event: MouseEvent) => { event.stopPropagation(); setAnchor((current) => (current ? null : button.current)) },
     }, icon ?? h(IconMore, { size: 18 })),
-    anchor ? h(PopMenu, { anchor, items, onClose: () => setAnchor(null) }) : null)
+    anchor ? h(PopMenu, { anchor, items, onClose: () => setAnchor(null), header }) : null)
 }
 
 /** A centred card over the page: title row with ×, body, optional footer. */
@@ -92,9 +93,7 @@ export function Sheet({ title, onClose, closeLabel, children, footer, wide, head
 }
 
 /**
- * The small sidebar-toggle at a room's top left, as Muse's rooms have it: it
- * opens the chat beside the room (the split) and closes it again. Hidden
- * while the room is already beside the chat.
+ * 房间左上角的会话开关，展开和收起时均保留，支持连续切换。
  */
 export function RoomToggle({ t, panel }: { t: Translate; panel: string }): ReactNode {
   const { split } = useWin()
@@ -105,6 +104,7 @@ export function RoomToggle({ t, panel }: { t: Translate; panel: string }): React
     'aria-label': open ? t('splitClose') : t('splitOpen'),
     title: open ? t('splitClose') : t('splitOpen'),
     'aria-pressed': open,
+    'aria-expanded': open,
     onClick: () => nav.split(open ? null : panel),
   }, h(IconPanelLeft, { size: 18 }))
 }

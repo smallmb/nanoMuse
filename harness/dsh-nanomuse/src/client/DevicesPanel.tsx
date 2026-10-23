@@ -17,6 +17,7 @@ import { settingsBus } from './bus.ts'
 import { CODING_SECTION, codingNav } from './CodingPanel.tsx'
 import { IconDevices, IconGlobe, IconLaptop, IconPencil, IconPhone, IconRefresh } from './icons.tsx'
 import { useLive, type LiveDevice } from './live.ts'
+import { usePageScroll } from './page-cache.ts'
 import { MoreButton } from './ui.tsx'
 
 const DOWNLOAD_URL = 'https://nanomuse.cn/dl/'
@@ -83,6 +84,7 @@ function osLine(d: Pick<LiveDevice, 'os' | 'version'> | undefined): string {
 export function makeDevicesPanel(t: Translate) {
   return function DevicesPanel(): ReactNode {
     const live = useLive()
+    const scroll = usePageScroll('devices')
     const hub = live.hub
     const [renaming, setRenaming] = useState(false)
     const [name, setName] = useState(hub.deviceName)
@@ -110,7 +112,7 @@ export function makeDevicesPanel(t: Translate) {
     const online = others.filter((d) => d.online).length + (hub.connected ? 1 : 0)
     const ownActions = self?.actions ?? []
 
-    return h('div', { className: 'nm-page nm-dv' },
+    return h('div', { className: 'nm-page nm-dv', ref: scroll },
       h('div', { className: 'nm-page-inner' },
         h('h1', null, t('railDevices')),
         h('div', { className: 'nm-dv-head' },

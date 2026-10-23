@@ -14,7 +14,7 @@ import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, symlinkSync, w
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const appDir = resolve(here, "..");
@@ -39,7 +39,8 @@ if (args.includes("--app") && appArg) {
   }
 } else {
   const electronPkg = join(appDir, "node_modules", "electron");
-  const { default: path } = await import(join(electronPkg, "index.js")).catch(() => ({ default: undefined }));
+  // Windows 盘符路径必须转成文件 URL，才能被 Node 的 ESM 动态导入正确识别。
+  const { default: path } = await import(pathToFileURL(join(electronPkg, "index.js")).href).catch(() => ({ default: undefined }));
   electron = path;
   dshDir = join(appDir, "dsh");
 }

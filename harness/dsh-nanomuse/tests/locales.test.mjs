@@ -26,6 +26,8 @@ const SAME_ON_PURPOSE = new Set([
   'cnCustomUrl',
   'fsMacTitle',
   'style_muse',
+  // Hatch 是用户选择的形象专名，中英文均保留原名。
+  'lookDragon',
   'abVersionBundle',
   'ownKeyKeyField',
   'ownKeyChatGptRow',

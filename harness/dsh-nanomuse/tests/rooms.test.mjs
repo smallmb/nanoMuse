@@ -39,10 +39,13 @@ test('zip writes an archive Python can read back', async () => {
     { name: 'nanomuse/rooms.json', data: Buffer.from('{"goals":[]}'), at: new Date(2026, 9, 3, 12, 30, 10) },
     { name: '构件/读我.txt', data: big, at: new Date() },
   ]))
-  const py = spawnSync('python3', ['-c', `import zipfile,sys; z=zipfile.ZipFile(sys.argv[1]); print(z.testzip()); print(','.join(i.filename for i in z.infolist())); print(len(z.read('构件/读我.txt')))`, file], { encoding: 'utf8' })
+  // 固定子进程的输出编码，避免 Windows 本地代码页损坏中文文件名。
+  const py = spawnSync('python3', ['-c', `import zipfile,sys; z=zipfile.ZipFile(sys.argv[1]); print(z.testzip()); print(','.join(i.filename for i in z.infolist())); print(len(z.read('构件/读我.txt')))`, file], { encoding: 'utf8', env: { ...process.env, PYTHONIOENCODING: 'utf-8' } })
   await rm(dir, { recursive: true, force: true })
   if (py.status !== 0) return // no python here; the crc checks above still ran
-  assert.equal(py.stdout.trim().split('\n')[0], 'None')
-  assert.equal(py.stdout.trim().split('\n')[1], 'nanomuse/rooms.json,构件/读我.txt')
-  assert.equal(py.stdout.trim().split('\n')[2], '5000')
+  // 兼容 Windows 的 CRLF 输出，仍逐项验证压缩包完整性、中文文件名和内容长度。
+  const lines = py.stdout.trim().split(/\r?\n/)
+  assert.equal(lines[0], 'None')
+  assert.equal(lines[1], 'nanomuse/rooms.json,构件/读我.txt')
+  assert.equal(lines[2], '5000')
 })

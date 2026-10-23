@@ -1,5 +1,19 @@
 # The desktop window, screen by screen
 
+Feed cards always show their more menu. A cover requires a saved image URL or an actual HTTP(S) article source; internal `feed://` links cannot supply a web cover. Posts without either remain text-only.
+
+Generated batches first select real articles, then the host reads their text and validates images found on those pages before requesting summaries. The saved post includes its source, verified cover address, image source page and fetch time. Source-free or unreadable batches are rejected. Direct posts with an article source use the same metadata enrichment; personal notes may remain text-only. The authenticated `POST /nanomuse/rooms/feed/update` endpoint repairs existing posts by id without changing their dates, likes or discussion links.
+
+Share my look is at the panel's top left, level with the Close button at the top right; it is no longer inside the avatar menu.
+
+Room changes are reported as saved only after their data reaches disk. A failed save reports an error and can be retried. Unreadable or damaged room, first-run and nudge files are preserved and reported as errors instead of being replaced with empty state.
+
+The four assistant tabs share a capsule selector and consistent rounded rows. Identity uses matching 24 px name and document cards, with a full-width Edit button; Edit the name remains in the avatar menu.
+
+The top tab bar and its buttons explicitly use round corners, overriding the host's superellipse corners so their capsule ends remain semicircular.
+
+The selected capsule moves with a horizontal track containing all four pages. Moving from the first tab to the second slides the first page left while the second enters from the right; moving back reverses the direction. Each page keeps its scroll position, and only the selected page accepts focus. This explicitly requested tab transition keeps its 240 ms movement even under reduced motion; other interface animations still follow that setting. The identity page no longer shows the explanatory paragraph below the document cards.
+
 > What the nanoMuse desktop on DeepSeek Harness looks like and does, page by page: the
 > window, the first run, the profile and the face, computer use, Settings, the rooms and
 > the hamburger menu. Interface only; the plan and the record of the work are in
@@ -13,17 +27,22 @@ account brings: the same agent on every device, Reach, an open model layer.
 
 ## The window
 
-One window: a narrow icon rail on the far left, a column of chats next to it, the
-conversation in the middle, the agent's face and name pinned above the conversation with
+One window: a 78 px icon rail on the far left, a column of chats next to it, the
+conversation in the middle, the agent's round face and name pinned above the conversation with
 a one-line status that changes as it works, and a composer at the bottom whose send disc
 becomes a stop square while a turn runs. Light, dark and system themes; nothing
 decorative, every surface a flat tone one step from its neighbour. It comes from dsh's
 `sidebar` seat and a stylesheet over the harness's stable DOM hooks (`data-composer-card`,
 `data-chat-flow-kind`, `data-approval-key`…):
 
-- The rail, top to bottom: Chats (a dot while the agent works), Search, Feed (a dot
-  for posts you have not seen), Ideas, Goals, Library, Devices; a spacer; the hamburger
-  at the foot (Schedules and the harness's other panels live in its menu). No face on
+Two full-height hairlines divide the rail, chat list and conversation. When the chat list
+is collapsed, the rail's divider remains; when a room is docked beside the conversation,
+its left edge uses the same divider.
+
+- The rail, top to bottom: Chats (a dot while the agent works), Search, Goals, Ideas,
+  Library, Feed (a dot for posts you have not seen); a spacer; the hamburger at the foot
+  (Schedules and the harness's other panels live in its menu). Devices live in Settings.
+  No face on
   the rail: the face is the pinned header and the profile
   panel. On macOS the window has no title bar: the traffic lights sit over the rail's
   empty top, which is a drag handle, and full screen takes the clearance away. Windows
@@ -78,6 +97,9 @@ decorative, every surface a flat tone one step from its neighbour. It comes from
   fields in the dark) and the accent follows the face's colour on the account, so a face
   coloured on the phone colours the desktop's lights and links too. The desktop shell paints the
   window in the same base colour, so a resize never flashes white in the dark.
+- Keyboard focus uses a consistent blue outline across the desktop's own controls and room
+  actions. The system's reduced-motion preference shortens their transitions and animations;
+  avatar video already follows the same preference.
 
 ## The first run
 
@@ -146,10 +168,10 @@ conversation does not repeat).
 ## The profile and the face
 
 The face at the top opens the agent's page, the phone's
-`AgentProfileScreen`, 310 px on the right beside the chat (the chat makes room; × or
+`AgentProfileScreen`, 360 px on the right beside the chat (the chat makes room; × or
 Escape closes it): the avatar at 86 px with a pen (**Change avatar** puts the phone's
 words in the composer ("Change your avatar to …", the chat flow below), **Edit name**,
-**Avatar studio…** (the dragon, an emoji on a colour, or a drawn face, written to the
+**Avatar studio…** (Hatch, an emoji on a colour, or a drawn face, written to the
 account and worn on every device)), the name, *online* / *Not signed in* / *Offline* or
 what the agent is doing right now, a share button (a card with the face and the name, as
 a picture to save or copy), and a segmented control of four tabs: **Activity** (the
@@ -157,12 +179,9 @@ sessions and the hub's notices, *Today* and *Earlier*), **Approvals** (the per-a
 *Always allow* grants with **Revoke**, *Manage permissions* → Settings → Computer use,
 then what you allowed or rejected on the approval cards, with when; kept on this
 computer), **Daily** (the routines; *Manage routines* opens the harness's schedules
-panel), **Soul & memory** (what the agent remembers about you, one line each): a
-field to add one, × to forget one, *Import memory* (a sheet: paste what another
-assistant knew, one line per memory), and the agent's description when the account has
-one. The agent writes memory itself with the `remember` tool when you tell it something
-you will expect it to know next time, and every chat's prompt carries the list back
-(`rooms.json`, this computer only). *Change look* has the dragon, an emoji on a colour,
+panel), **Soul & memory** (the agent's name and edit actions above two side-by-side
+SOUL and Memory cards, which open their files, followed by a caution note). *Change look*
+has Hatch, an emoji on a colour,
 and **Draw one**, the avatar studio: describe the character, pick a style (the 3D
 toy look by default), see what it costs against today's allowance, *Draw four*,
 and the four candidates come up in a 2×2 grid with *Option 1–4*; *This one* draws the
@@ -185,12 +204,14 @@ user changed my avatar to "…"`) and asks the agent to say so in one sentence a
 the `nanomuse-avatar` fence, which the chat shows as a small card with the new face. The
 agent's own `draw_new_look` still opens the studio for anything it wants to propose.
 
-**The face moves.** The face is animated per state: the dragon's four states
-(idle, working, waiting, happy) are the phone app's short clips
-(`assets/dragon-<state>.mp4`), played silently in a loop wherever the face is 44 px or
-larger (the header, the profile panel, the stage's cursor marker), with the still as
-the poster, and the still alone below that size, when the system asks for reduced
-motion, or where a list wants a quiet picture. A drawn face gets clips of its own, as on
+**The face moves.** The default Hatch avatar uses `assets/hatch.jpg` as its still and
+`assets/hatch.mp4` while idle, `assets/hatch_working-7x12.mp4` while working,
+`assets/hatch_waking.mp4` while waiting, and `assets/hatch_milestone_level_up.mp4`
+when pleased. These clips play silently in a loop wherever the face is 44 px or larger
+(the header, the profile panel, the stage's cursor marker); the still appears below that
+size, when the system asks for reduced motion, or where a list wants a quiet picture.
+The bundled `assets/hatch_making_something.mp4` is available for other work states.
+A drawn face gets clips of its own, as on
 the phone: four 4-second clips (idle, working, waiting, happy) drawn from the face by
 `wan2.2-i2v-flash` through the relay or your own Bailian key (`src/video.ts`,
 `src/motion.ts`; the phone's prompts word for word), kept under `avatar/motion/` on this
@@ -556,6 +577,17 @@ serves `/nanomuse/rooms/*` and streams changes to the browser half:
   (08:00, a schedule you can move or switch off under the sliders) is created the first
   time the room opens. A dot on the rail marks posts newer than your last visit. The agent
   can also post from any chat with `feed_post`.
+  Titles, covers and blue inline links open the original article; sources stay in the
+  post text instead of appearing again below the cover. The more menu shows the post's
+  date and **Why for me** with the saved selection reason. The desktop first tries a
+  saved picture, then the source page's cover metadata or article images. Unreadable
+  pictures leave no placeholder. New batches and `feed_post` require this reason to
+  refer to the person's actual instructions, interests or goals. Earlier posts can
+  recover their sources from existing links, but report when no original reason was
+  saved. **Discuss** carries the saved reason and sources into the conversation.
+  Repeated clicks while its first discussion is opening reuse that creation request;
+  a failed creation can be retried. In a browser, `#nanomuse-feed` keeps the Feed open
+  across a refresh and is cleared when another main panel opens.
 - **Ideas**: the phone's curated list (`assets/ideas.{en,zh}.json`, the same 24 items
   in six sections: Travel, Work, Everyday, Learning, Family & friends, More ideas), each
   row an emoji, a first-person pitch and a line of detail; a row opens a sheet that says
@@ -645,3 +677,9 @@ nowhere else.
   whatever the cache says.
 - **Open source, no closed component.** The bundle is GPL-3.0-or-later; the harness is
   MIT and travels with its notice; the About row says so.
+
+Post titles keep their normal color. Body links are unwrapped before matching title entities, so matching keywords link to the original article in blue.
+
+Switching between Feed, Ideas, Goals, Library and Devices restores scroll positions. Library search/sort and completed-goal visibility remain in memory for this window. Live connections survive brief panel switches; decoded feed images are reused by content version (up to 200 entries). Feed rows follow a transparent stream layout with no row hover background.
+
+Settings navigation highlights search matches only while a nonempty query is active, keeps the current page distinct, and separates rows with a 4 px gap.

@@ -27,6 +27,31 @@ def tc(name: str, **args: Any) -> ToolCall:
     return ToolCall(function=Function(name=name, arguments=json.dumps(args)))
 
 
+def test_websocket_backlog_closes_and_reconnect_restores_state(server):
+    """队列溢出必须断线重连，并重新提供完整线程状态。"""
+    from starlette.websockets import WebSocketDisconnect
+
+    client, service, _llm = server
+    with client.websocket_connect("/ws") as ws:
+        ws.send_json({"kind": "auth", "token": "secret-token"})
+        assert ws.receive_json()["kind"] == "hello"
+
+        async def overflow() -> None:
+            # 在一次事件循环回调中填满队列，确定性模拟无法及时读取的客户端。
+            for index in range(1001):
+                service.bus.publish({"kind": "audit", "index": index})
+
+        client.portal.call(overflow)
+        with pytest.raises(WebSocketDisconnect) as closed:
+            ws.receive_json()
+        assert closed.value.code == 1013
+    with client.websocket_connect("/ws") as ws:
+        ws.send_json({"kind": "auth", "token": "secret-token"})
+        assert ws.receive_json()["kind"] == "hello"
+        ws.send_json({"kind": "ping"})
+        assert ws.receive_json()["kind"] == "pong"
+
+
 @pytest.fixture()
 def server(settings: Settings) -> Iterator[tuple[TestClient, MuseService, MockLLM]]:
     settings.server.token = "secret-token"

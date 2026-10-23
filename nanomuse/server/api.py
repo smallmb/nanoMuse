@@ -2001,6 +2001,11 @@ def create_app(settings: Settings, service: MuseService | None = None) -> FastAP
         async def pump() -> None:
             while True:
                 msg = await queue.get()
+                if msg.get("kind") == "resync":
+                    # 1013 会触发已有客户端重连，避免连接存活却永久收不到事件。
+                    async with lock:
+                        await ws.close(code=1013, reason="event backlog; reconnect to sync")
+                    return
                 await send(msg)
 
         pump_task = asyncio.create_task(pump())

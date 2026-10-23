@@ -13,6 +13,7 @@ import type { Translate } from './api.ts'
 import { IconCheck, IconChevronLeft, IconDoc, IconExternal, IconFile, IconFilter, IconFolder, IconGlobe, IconImage, IconPencil, IconPlus, IconSearch, IconShapes, IconTrash, IconVideo, IconWave } from './icons.tsx'
 import type { Words } from './locales.ts'
 import { LIBRARY_PANEL } from './panels.ts'
+import { usePageScroll, usePageState } from './page-cache.ts'
 import { fileUrl, nav, roomsCall, useRooms, type LibraryItem, type LibraryKind } from './rooms.ts'
 import { ago, Empty, Markdown, MoreButton, plain, RoomToggle } from './ui.tsx'
 import { win } from './win.ts'
@@ -44,9 +45,10 @@ export function makeLibraryPanel(t: Translate) {
   return function LibraryPanel(): ReactNode {
     const rooms = useRooms()
     const [shelf, setShelfState] = useState<Shelf>(lastShelf)
+    const scroll = usePageScroll(`library.${shelf}`)
     const setShelf = (next: Shelf) => { lastShelf = next; setShelfState(next) }
-    const [query, setQuery] = useState('')
-    const [sort, setSort] = useState<'newest' | 'name'>('newest')
+    const [query, setQuery] = usePageState('library.query', '')
+    const [sort, setSort] = usePageState<'newest' | 'name'>('library.sort', 'newest')
     const [selecting, setSelecting] = useState(false)
     const [selected, setSelected] = useState<Set<string>>(new Set())
     const [openId, setOpenId] = useState<string | undefined>()
@@ -95,7 +97,6 @@ export function makeLibraryPanel(t: Translate) {
 
     const column = h('aside', { className: 'nm-lib-col' },
       h('div', { className: 'nm-lib-col-top', 'data-window-drag': true }),
-      h('div', { className: 'nm-lib-col-tools' }, h(RoomToggle, { t, panel: LIBRARY_PANEL })),
       h('label', { className: 'nm-lib-search' }, h(IconSearch, { size: 15 }), h('input', { type: 'search', value: query, placeholder: t('libSearch'), onChange: (e: FormEvent<HTMLInputElement>) => setQuery(e.currentTarget.value) })),
       h('div', { className: 'nm-lib-group' }, t('libArtifacts')),
       SHELVES.map((s) => h(ShelfButton, { key: s.id, t, shelf: s, active: shelf === s.id, onClick: () => { setShelf(s.id); setSelecting(false) } })),
@@ -131,12 +132,14 @@ export function makeLibraryPanel(t: Translate) {
           h('div', { className: 'nm-lib-recent' }, query ? t('libResults') : t(current.heading)),
           h('div', { className: 'nm-lib-grid' }, items.map(card)))
 
-    return h('div', { className: 'nm-room nm-lib' },
+    return h('div', { className: 'nm-room nm-lib nm-room-with-chat' },
+      // 开关以整个资源库页面为定位区域，不随分类栏或内容列移动。
+      h(RoomToggle, { t, panel: LIBRARY_PANEL }),
       column,
       h('div', { className: 'nm-lib-main' },
         h('div', { className: 'nm-room-top', 'data-window-drag': true }),
         head,
-        h('div', { className: 'nm-room-body' }, h('div', { className: 'nm-room-inner nm-lib-inner' }, error ? h('div', { className: 'nm-room-error' }, error) : null, grid))))
+        h('div', { className: 'nm-room-body', ref: scroll }, h('div', { className: 'nm-room-inner nm-lib-inner' }, error ? h('div', { className: 'nm-room-error' }, error) : null, grid))))
   }
 }
 
@@ -207,8 +210,9 @@ function Viewer({ t, item, lang, onBack, onOpen, onReveal, onRemove, onFail }: {
   else if (editing) body = h('textarea', { className: 'nm-view-editor', value: draft, spellCheck: false, onChange: (e: FormEvent<HTMLTextAreaElement>) => setDraft(e.currentTarget.value) })
   else body = markdown ? h(Markdown, { text, className: 'nm-view-md' }) : h('pre', { className: 'nm-view-pre' }, text)
 
-  return h('div', { className: 'nm-room nm-view' },
+  return h('div', { className: 'nm-room nm-view nm-room-with-chat' },
     h('div', { className: 'nm-room-top', 'data-window-drag': true }),
+    h(RoomToggle, { t, panel: LIBRARY_PANEL }),
     h('div', { className: 'nm-view-bar' },
       h('button', { type: 'button', className: 'nm-icon-btn', 'aria-label': t('goBack'), title: t('goBack'), onClick: onBack }, h(IconChevronLeft, { size: 20 })),
       h('span', { className: 'nm-view-icon' }, h(Icon, { size: 16 })),

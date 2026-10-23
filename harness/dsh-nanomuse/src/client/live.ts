@@ -225,6 +225,7 @@ export const EVENTS_URL = 'nanomuse/cloud/events'
 
 let snapshot: Live = INITIAL
 let source: EventSource | undefined
+let closeTimer: ReturnType<typeof setTimeout> | undefined
 const listeners = new Set<() => void>()
 
 function publish(next: Live): void {
@@ -259,13 +260,18 @@ function open(): void {
 }
 
 function subscribe(listener: () => void): () => void {
+  // 短暂卸载不重建实时连接，避免页面之间切换时重复请求快照。
+  clearTimeout(closeTimer)
   listeners.add(listener)
   open()
   return () => {
     listeners.delete(listener)
     if (listeners.size === 0 && source) {
-      source.close()
-      source = undefined
+      closeTimer = setTimeout(() => {
+        if (listeners.size) return
+        source?.close()
+        source = undefined
+      }, 1000)
     }
   }
 }

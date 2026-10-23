@@ -15,6 +15,14 @@ harness/**/*.png binary
 harness/**/*.webp binary
 harness/**/*.icns binary
 harness/**/*.ico binary
+# 桌面启动检查逐字比较模型目录，其源文件和中继副本也必须保持 LF。
+nanomuse/llm/providers.json text eol=lf
+cloud/nanomuse_cloud/providers.json text eol=lf
+# Web 灵感目录与手机、桌面副本逐字节比较，检出时统一使用 LF。
+web/src/ideas/*.json text eol=lf
+# HTML 入口保持 LF，避免构建时将检出的 CRLF 混入生成页面。
+web/*.html text eol=lf
+nanomuse/server/static/*.html text eol=lf
 # The phones' copies of the desktop's catalogues and Ideas lists: the desktop's tests compare
 # them with its own byte for byte (tests/fences.test.mjs), so they keep LF the same way.
 android/src/android/app/src/main/assets/nanomuse/*.json text eol=lf

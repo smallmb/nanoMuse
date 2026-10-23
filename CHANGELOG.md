@@ -4,6 +4,52 @@ All notable changes to nanoMuse. The format follows [Keep a Changelog](https://k
 
 ## [Unreleased]
 
+### Data reliability
+
+- Prevented older background timeline snapshots from overwriting shutdown saves. Reconnected slow WebSocket clients to restore current state after event backlog overflow.
+- Reported desktop room, first-run and nudge save failures to callers, allowed subsequent saves to retry, and preserved damaged state files instead of replacing them with empty data.
+
+### Desktop Feed
+  Settings navigation no longer marks every row as a search match for an empty query; highlighted rows have spacing and retain the current-page style.
+  Panel switches preserve scroll and filter preferences, reuse live connections and decoded feed images; feed rows use a transparent Kami-style layout without hover blocks.
+  Feed source links highlight matching title keywords within the body, replacing misplaced model-authored anchors; headings keep their normal color.
+
+- Grounded generated Feed batches in fetched article text before summarization, validated source-page covers, and persisted source URLs, image URLs, image provenance and fetch times. Rejected source-free batches and added an authenticated repair endpoint that preserves existing post identity and interactions.
+
+- Replaced the default dragon avatar with the supplied Hatch image and status videos; kept custom faces and emoji avatars available.
+- Kept the agent's avatar circular in the component itself so it stays round across desktop pages.
+- Added full-height dividers between the navigation rail, chat list and main content to match the desktop's three-area layout.
+- Aligned the Goals, Ideas and Library conversation toggles with the Feed's upper-left toggle and expand/collapse behavior. Set the navigation rail width to 78px.
+- Applied the shared icon library across desktop settings, goals, ideas, Library, devices and conversation tools. Standardized icon sizing and spacing by context while retaining loading, navigation and liked states.
+- Bundled the complete supplied legacy icon library under the shared assets prefix and reused it for the sidebar icons.
+- Reordered sidebar tabs to Chats, Search, Goals, Ideas, Library and Feed. Updated their glyphs, circular selection backgrounds and spacing to match the supplied reference.
+- Centered the sidebar navigation tabs and recent documents vertically between the profile and bottom menu.
+- Matched the profile panel to Kami's 360 px width, activity rows and two-column identity cards while keeping the existing file and edit actions.
+- Moved the Feed conversation toggle to the panel's upper left. Clicking again hid the conversation and restored the full Feed, while keeping the current conversation available to reopen.
+- Added source-page cover previews, inline highlighted article links and clickable titles and images. Saved the reason each new post was created for the person and placed it in the card's more menu; discussions carry it with sources. Earlier posts reuse their existing links and clearly state when no original reason was saved; unreadable images leave no empty placeholder. Persisted the start time of a feed attempt so an interrupted daily batch is not immediately retried after a Host restart.
+- Kept the Feed open after refreshing its browser page and cleared that address marker when returning to chats. Concurrent first-discussion requests for one post reused a single conversation creation; failed creation allowed a retry.
+
+### Desktop UI
+
+- Kept the Feed card's more menu visible without hovering.
+
+- Moved Share my look from the avatar menu to the assistant panel's top-left corner, aligned with the Close button.
+
+- Replaced the assistant tab content's short entrance animation with a shared horizontal page track: the outgoing page slides off as the next page enters, preserving each page's scroll position and disabling focus in inactive pages. Kept this explicitly requested transition visible under reduced motion while preserving reduced motion elsewhere.
+
+- Removed the identity page's explanatory paragraph below its document cards. Added a sliding selected capsule and matching directional content transitions to the assistant's four tabs, respecting reduced-motion settings.
+
+- Restored circular capsule ends on the assistant's top tab bar and all four tab buttons by overriding the host's global superellipse corner shape.
+
+- Unified the assistant's four tabs with shared capsule and row radii. Matched the identity cards to the Kami reference with a full-width Edit action, matching card corners and vector hearts; kept name editing in the avatar menu.
+
+- Standardized visible keyboard focus across the desktop's own controls and room actions, and shortened their transitions and animations when the system requests reduced motion.
+
+### Desktop development
+
+- Added a PowerShell 7 desktop-development launcher with isolated local data and optional loopback debugging ports. Fixed the ZIP export test for Windows line endings and output encoding, fixed the smoke check to locate Electron through a Windows file URL, and kept provider catalogue sources in LF for Windows checks.
+- Added a browser-only launch option for testing the same desktop plugin through the Host's normal authenticated entry.
+
 ### Cloud
 
 - **Chat bursts no longer overwhelmed one shared upstream deployment.** The relay now admits a bounded number of chat requests globally, queues the rest, and retries an upstream 429 or 5xx only before any output starts. The operator health response shows active and waiting upstream turns without exposing account or message data.

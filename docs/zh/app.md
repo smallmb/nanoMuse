@@ -9,6 +9,8 @@
 
 `nanomuse serve` 跑一个常驻的智能体，并在同一个进程里把手机用的应用一起提供出来。应用是一个 React 单页应用，构建到 `nanomuse/server/static/`，随 Python 包一起发布；服务端是 FastAPI，实时事件走一条 WebSocket。
 
+后台写入与退出保存同时发生时，时间线保留最新快照。浏览器积压过多实时事件时，运行时会以 1013 状态码关闭 WebSocket；浏览器自动重连，并重新加载当前状态和对话。
+
 ```bash
 nanomuse serve                      # http://127.0.0.1:8787, this machine only
 nanomuse serve --host 0.0.0.0       # also reachable from your phone on the same network

@@ -1,16 +1,9 @@
 /**
- * The `dsh-nanomuse` root row: the host side of the browser half.
- *
- * The browser half (`exports["./client"]`) rides on this row — the client
- * module system attaches a package's `dsh.client` bundle to the Loader row
- * whose specifier is the bare package name — and it needs the agent's face:
- * the dragon's stills and clips under `assets/`, served at
- * `/nanomuse/assets/<file>`, and the stills of a face drawn on the phone and
- * pulled from the account, served at `/nanomuse/assets/face/<id>/<mood>.webp`
- * from `$DSH_HOME/nanomuse/faces/` when a web server is present (a `.mp4` there
- * is served too, should a face ever come with clips; today it is a 404 and the
- * browser shows the still). The cloud service is its own row
- * (`dsh-nanomuse/cloud`); the face files are read through its profile store.
+ * 提供桌面插件宿主端能力，并为浏览器界面提供默认 Hatch 形象、账号头像和状态视频。
+ * 默认静态图及状态视频位于 `assets/`，通过 `/nanomuse/assets/<file>` 提供。
+ * 手机绘制并同步到账户的头像从 `$DSH_HOME/nanomuse/faces/` 读取，图片通过
+ * `/nanomuse/assets/face/<id>/<mood>.webp` 提供，也支持同目录下的头像视频。
+ * 云端服务由 `dsh-nanomuse/cloud` 插件提供，头像文件由它的资料存储管理。
  */
 import { createReadStream } from 'node:fs'
 import { stat } from 'node:fs/promises'
@@ -30,7 +23,14 @@ export const name = 'nanomuse'
 export const ASSETS_PREFIX = '/nanomuse/assets'
 
 const ASSETS_DIR = packageAssetsDir(import.meta.url)
-const TYPES: Record<string, string> = { '.webp': 'image/webp', '.png': 'image/png', '.svg': 'image/svg+xml', '.mp4': 'video/mp4' }
+const TYPES: Record<string, string> = {
+  '.webp': 'image/webp',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.svg': 'image/svg+xml',
+  '.mp4': 'video/mp4',
+}
 const FACE = /^\/face\/([a-f0-9]{6,40})\/([a-z]+)\.(webp|mp4)$/
 
 /**

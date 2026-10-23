@@ -58,7 +58,7 @@ import { makeChannelsSection, makeComputerSection, makeHelpSection, makeLegalSec
 import { makeMediaSection } from './MediaSection.tsx'
 import { makeModelsSection, MODELS_SECTION } from './ModelsSection.tsx'
 import { ensureStyles, setAccent, setMuseMode } from './styles.ts'
-import { useWin, win } from './win.ts'
+import { peekWin, useWin, win } from './win.ts'
 
 export const name = 'nanomuse-client'
 /** Required services: slots, the locale table, the frame, the workspace UI's session actions, shortcuts. */
@@ -332,6 +332,9 @@ export function apply(ctx: ClientContext): void {
       layout.selectPanel(null)
       win.split(panel)
     } else {
+      // 收起会话时让右侧房间回到主区域，保留当前会话供再次展开。
+      const room = peekWin().split
+      if (room) layout.selectPanel(room)
       win.split(null)
     }
   }
@@ -343,6 +346,8 @@ export function apply(ctx: ClientContext): void {
     [LIBRARY_PANEL, makeLibraryPanel(t)],
   ]
   for (const [key, Panel] of rooms) slots.inject('main', () => slots.register({ name: 'main', key, locale: 'nanomuse' }, Panel))
+  // 浏览器刷新时恢复动态页；原生桌面的窗口状态继续由外壳管理。
+  if (!bridge() && window.location.hash === '#nanomuse-feed') layout.selectPanel(FEED_PANEL)
   const DevicesPanel = makeDevicesPanel(t)
   slots.inject('main', () => slots.register({ name: 'main', key: DEVICES_PANEL, locale: 'nanomuse' }, DevicesPanel))
   // The split pane itself, over the frame beside the chat; it keeps the active
@@ -350,8 +355,18 @@ export function apply(ctx: ClientContext): void {
   slots.inject('shell.overlay', () =>
     slots.register({ name: 'shell.overlay', id: 'nanomuse.split', locale: 'nanomuse' }, ({ usePanelInfo }: { usePanelInfo?: <S>(selector: (info: { activePanelId: string | null }) => S) => S }) => {
       const active = typeof usePanelInfo === 'function' ? usePanelInfo((info) => info.activePanelId) : null
-      activePanel = active
       const split = useWin().split
+      activePanel = active
+      useEffect(() => {
+        if (bridge()) return
+        const url = new URL(window.location.href)
+        const hash = active === FEED_PANEL || split === FEED_PANEL ? '#nanomuse-feed' : url.hash === '#nanomuse-feed' ? '' : url.hash
+        // 仅同步自己的动态定位，离开时清除，保留其他来源的地址片段。
+        if (hash !== url.hash) {
+          url.hash = hash
+          window.history.replaceState(window.history.state, '', url)
+        }
+      }, [active, split])
       const open = split !== null && active === null
       useEffect(() => {
         if (open) document.documentElement.dataset['nmSplit'] = ''

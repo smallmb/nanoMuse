@@ -56,20 +56,24 @@ export function apply(ctx: Context): void {
       ctx.tools.register(
         defineTool({
           name: 'feed_post',
-          description: "Write a post into the person's Feed (their 动态 room): something they asked you to put there, a digest you made, a finding worth keeping. Markdown body, links inline. Not for ordinary replies.",
+          description: "Write a post into the person's Feed (their 动态 room): something they asked you to put there, a digest you made, a finding worth keeping. Preserve actual sources, link a meaningful entity inline, and explain why you selected it for this person using their real instructions, interests or goals. Never invent personal context or image URLs. Not for ordinary replies.",
           parameters: {
             title: { type: 'string', required: true, description: 'At most 12 words.' },
             body: { type: 'string', required: true, description: '60-200 words of Markdown; no heading.' },
             area: { type: 'string', description: `One of ${AREAS.join(', ')}.` },
             emoji: { type: 'string', description: 'One emoji that fits.' },
             image: { type: 'string', description: 'A direct https image URL to show with it, if there is one.' },
+            sourceUrl: { type: 'string', description: 'Actual article URL that you read. Leave empty for a personal note without a web source.' },
+            sourceTitle: { type: 'string', description: 'Title of that source article.' },
+            recommendationReason: { type: 'string', required: true, description: 'One or two concrete sentences explaining why this post was created for this person, grounded in their actual request, interests, goals or project. Do not invent a preference.' },
           },
           output: {
             schema: { type: 'object', properties: { id: { type: 'string' }, title: { type: 'string' } }, additionalProperties: false },
             render: (_args, value) => [{ type: 'text', text: `Posted to the feed: ${value.title}` }],
           },
           async execute(args) {
-            const post = await rooms.addPost({ title: args.title, body: args.body, ...(args.area ? { area: args.area } : {}), ...(args.emoji ? { emoji: args.emoji } : {}), ...(args.image ? { image: args.image } : {}) })
+            if (typeof args.recommendationReason !== 'string' || !args.recommendationReason.trim()) throw new Error('Explain why this post is relevant to the person before posting it.')
+            const post = await rooms.addPost({ title: args.title, body: args.body, ...(args.area ? { area: args.area } : {}), ...(args.emoji ? { emoji: args.emoji } : {}), ...(args.image ? { image: args.image } : {}), recommendationReason: args.recommendationReason, sources: args.sourceUrl ? [{ url: args.sourceUrl, title: args.sourceTitle || args.title }] : [] })
             return { id: post.id, title: post.title }
           },
           presentCall: (args) => ({ card: 'generic', title: `Post to the feed: ${args.title || ''}`, kind: 'other', rawInput: args }),

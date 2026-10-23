@@ -7,6 +7,7 @@
  * sheet with examples; the goal then lives in a chat of its own.
  */
 import { failureText } from './api.ts'
+import { usePageScroll, usePageState } from './page-cache.ts'
 import { createElement as h, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import type { Translate } from './api.ts'
 import { IconAlarm, IconBriefcase, IconCheck, IconCheckCircle, IconChevronRight, IconCircleDot, IconDollar, IconHeartLine, IconMonitor, IconPalette, IconSquare, IconTarget, IconUsers } from './icons.tsx'
@@ -29,10 +30,11 @@ const CATEGORIES: { id: Category; label: Words; icon: (p: { size: number }) => R
 export function makeGoalsPanel(t: Translate) {
   return function GoalsPanel(): ReactNode {
     const rooms = useRooms()
+    const scroll = usePageScroll('goals')
     const [openId, setOpenId] = useState<string | undefined>()
     const [creating, setCreating] = useState<Category | undefined>()
     const [beginning, setBeginning] = useState<Category | undefined>()
-    const [showDone, setShowDone] = useState(false)
+    const [showDone, setShowDone] = usePageState('goals.showDone', false)
     const [error, setError] = useState<string | undefined>()
     const open = rooms.goals.find((g) => g.id === openId)
     const tracking = rooms.goals.filter((g) => g.status !== 'done')
@@ -61,17 +63,18 @@ export function makeGoalsPanel(t: Translate) {
       roomsCall<{ sessionId: string }>('goals/begin', { category, sessionId: peekWin().current ?? '' }).then(({ sessionId }) => beside(sessionId)).catch(fail).finally(() => setBeginning(undefined))
     }
 
-    return h('div', { className: 'nm-room' },
+    return h('div', { className: 'nm-room nm-room-with-chat' },
       h('div', { className: 'nm-room-top', 'data-window-drag': true }),
+      // 会话开关独立于标题，始终锚定页面左上角。
+      h(RoomToggle, { t, panel: GOALS_PANEL }),
       h('div', { className: 'nm-room-head' },
-        h(RoomToggle, { t, panel: GOALS_PANEL }),
         h('h1', { className: 'nm-room-title' }, t('railGoals')),
         h('div', { className: 'nm-room-actions' },
           h(MoreButton, { label: t('more'), size: 36, items: [
             { id: 'done', label: showDone ? t('goalsHideDone') : t('goalsShowDone', { n: done.length }), onSelect: () => setShowDone((v) => !v) },
             { id: 'typed', label: t('goalTypeOut'), onSelect: () => setCreating('other') },
           ] }))),
-      h('div', { className: 'nm-room-body' },
+      h('div', { className: 'nm-room-body', ref: scroll },
         h('div', { className: 'nm-room-inner nm-goals' },
           error ? h('div', { className: 'nm-room-error' }, error) : null,
           tracking.length === 0 && !showDone

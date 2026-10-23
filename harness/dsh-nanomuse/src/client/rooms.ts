@@ -5,8 +5,9 @@
  * account), and the calls the rooms make. Types mirror `src/rooms.ts`.
  */
 import { useSyncExternalStore } from 'react'
+import type { FeedDetails } from '../feed.ts'
 
-export interface FeedPost {
+export interface FeedPost extends FeedDetails {
   id: string
   at: number
   title: string
@@ -231,6 +232,7 @@ export const EVENTS_URL = `${API}/events`
 
 let snapshot: Rooms = INITIAL
 let source: EventSource | undefined
+let closeTimer: ReturnType<typeof setTimeout> | undefined
 let langSent = false
 const listeners = new Set<() => void>()
 
@@ -272,13 +274,18 @@ function open(): void {
 }
 
 function subscribe(listener: () => void): () => void {
+  // 页面快速切换时复用连接，真正离开全部页面后再释放。
+  clearTimeout(closeTimer)
   listeners.add(listener)
   open()
   return () => {
     listeners.delete(listener)
     if (listeners.size === 0 && source) {
-      source.close()
-      source = undefined
+      closeTimer = setTimeout(() => {
+        if (listeners.size) return
+        source?.close()
+        source = undefined
+      }, 1000)
     }
   }
 }
