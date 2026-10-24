@@ -1,6 +1,6 @@
 # 本地桌面开发与调试
 
-本地分支：`codex/personal`。本轮只安装和验证 Windows 桌面端，不构建 Android、iOS、独立 Web 服务或中继服务。官方仓库为 `upstream`，推送地址已禁用；个人仓库 `smallmb/nanoMuse` 配置为 `origin`。
+本地长期定制分支：`custom/personal`，远程跟踪 `origin/custom/personal`。后续更新遵循[定制版本更新策略](zh/desktop-muse.md#custom-update-policy)。本轮只安装和验证 Windows 桌面端，不构建 Android、iOS、独立 Web 服务或中继服务。官方仓库为 `upstream`，推送地址已禁用；个人仓库 `smallmb/nanoMuse` 配置为 `origin`。
 
 ## 启动
 

@@ -4,6 +4,8 @@ nanoMuse is an open-source personal agent for every device a person owns: a phon
 
 ## Repository layout
 
+**Personal fork policy:** `custom/personal` is the protected customization line. Follow [the custom update policy](docs/desktop-muse.md#custom-update-policy) for every upstream update; never merge upstream directly into it or replace its UI/data without the user's explicit instruction.
+
 ```
 nanomuse/               Python runtime: agent loop, Sentinel, tools, hands (phone/computer operators), server for the web app
 cloud/                  nanoMuse Cloud, the relay: FastAPI + SQLite; sign-in, models, hub, conversation sync, console at /app

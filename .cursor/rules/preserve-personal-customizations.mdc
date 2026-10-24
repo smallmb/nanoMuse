@@ -1,0 +1,11 @@
+---
+description: 保留当前定制版本，上游更新先隔离验证，只合必要修复
+alwaysApply: true
+---
+
+# 定制分支更新约定
+
+- 当前长期定制分支是 `custom/personal`，远程为 `origin/custom/personal`。
+- 上游更新必须遵循 [项目更新策略](../../docs/zh/desktop-muse.md#custom-update-policy)。
+- 未经用户明确要求，不直接合并上游、不丢弃定制提交、不重置或强推定制分支。
+- 保留现有界面和真实数据，不把运行数据、凭据或本地分析笔记提交到 GitHub。

@@ -723,3 +723,17 @@ The message composer uses round 34 px corners: a capsule on one line and stable 
 Synced conversation messages no longer render a device-model attribution beneath their text; source metadata stays unchanged.
 
 Assistant messages synced from another device use the same bubble background, 20 px corners and inner padding as local assistant replies.
+
+## Custom update policy
+
+The long-lived personal customization branch is `custom/personal`, tracked at `origin/custom/personal` in `smallmb/nanoMuse`. Baseline commit `cf7f65184bb10dad2d03ee9986e7a7f789ecec1a` preserves the current UI and fixes; local backup branch `backup/custom-baseline-20261024` also points to it. Do ordinary customization work on `custom/personal` and push to that branch.
+
+For future upstream changes:
+
+1. Inspect the working tree, commit or back up existing changes, and fetch `upstream/main` without merging it. Create a temporary `verify/upstream-YYYYMMDD-topic` branch from the current custom branch, preferably in an isolated checkout.
+2. Review upstream commits and select only necessary bug or security fixes with `git cherry-pick -x`, including required dependencies. Do not merge all of upstream simply to make the fork current.
+3. Build and test the affected areas on the temporary branch. Check chat bubbles, composer, sidebar navigation, profile tabs, document editing and resizing against the current UI. Validate dependency patches against the upstream version. Reject or adapt a fix that regresses custom behavior.
+4. Use copied test data for trial runs. Preserve existing rooms, conversations, account configuration, avatars and documents; back up real data before a required migration. Do not run unverified code against the live data directory or commit runtime data and credentials.
+5. Only after validation, apply the selected fixes to `custom/personal` and push that branch. Keep unrelated upstream features and visual changes out. No reset, force push, discard-commits synchronization or bulk upstream merge unless the user explicitly requests it. If a necessary fix cannot preserve current behavior, explain the concrete conflict before proceeding.
+
+Fetching upstream or seeing an ahead/behind notice does not change custom code. The GitHub fork sync controls are not the update workflow for `custom/personal`. These instructions define the workflow; they do not schedule automatic updates or perform future merges.
