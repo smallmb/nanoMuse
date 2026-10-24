@@ -7,7 +7,8 @@
  * and is not ours to import.
  */
 import { Modal } from '@deepseek-ai/dsh-client-ui-primitives'
-import { createElement as h, Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
+import { createElement as h, Fragment, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
+import { createPortal } from 'react-dom'
 import type { Translate } from './api.ts'
 import { openLink } from './bridge.ts'
 import { IconMore, IconPanelLeft } from './icons.tsx'
@@ -23,9 +24,20 @@ export interface MenuChoice {
 }
 
 /** A menu under (or over) its anchor, flush with the anchor's right edge when there is no room to the right. */
-export function PopMenu({ anchor, items, onClose, header }: { anchor: HTMLElement; items: (MenuChoice | 'sep')[]; onClose(): void; header?: ReactNode }): ReactNode {
+export function PopMenu({ anchor, items, onClose, header, align = 'start', className = '' }: { anchor: HTMLElement; items: (MenuChoice | 'sep')[]; onClose(): void; header?: ReactNode; align?: 'start' | 'end'; className?: string }): ReactNode {
   const menu = useRef<HTMLDivElement>(null)
   const rect = anchor.getBoundingClientRect()
+  const [position, setPosition] = useState<{ left: number; top: number } | null>(null)
+  // 动态菜单按实际尺寸贴齐按钮右侧，并避开视口边缘及滚动容器裁切。
+  useLayoutEffect(() => {
+    if (align !== 'end' || !menu.current) return
+    const bounds = anchor.getBoundingClientRect()
+    const { width, height } = menu.current.getBoundingClientRect()
+    setPosition({
+      left: Math.max(8, Math.min(bounds.right - width, window.innerWidth - width - 8)),
+      top: Math.max(8, Math.min(bounds.bottom + height + 8 <= window.innerHeight ? bounds.bottom + 8 : bounds.top - height - 8, window.innerHeight - height - 8)),
+    })
+  }, [anchor, align])
   useEffect(() => {
     const onPointer = (event: PointerEvent) => {
       const target = event.target as Node
@@ -40,29 +52,38 @@ export function PopMenu({ anchor, items, onClose, header }: { anchor: HTMLElemen
     }
     document.addEventListener('pointerdown', onPointer, true)
     document.addEventListener('keydown', onKey, true)
+    // 页面滚动或窗口变动后收起菜单，避免菜单滞留在旧坐标。
+    const onMove = () => onClose()
+    if (align === 'end') {
+      window.addEventListener('resize', onMove)
+      window.addEventListener('scroll', onMove, true)
+    }
     return () => {
       document.removeEventListener('pointerdown', onPointer, true)
       document.removeEventListener('keydown', onKey, true)
+      window.removeEventListener('resize', onMove)
+      window.removeEventListener('scroll', onMove, true)
     }
-  }, [anchor, onClose])
+  }, [anchor, onClose, align])
   useEffect(() => { menu.current?.querySelector('button')?.focus() }, [])
   const below = rect.bottom + 44 * items.length + 16 < window.innerHeight
   const rightward = rect.left + 220 < window.innerWidth
-  const style: Record<string, number> = {
+  const style: Record<string, number> = position ?? {
     ...(rightward ? { left: rect.left } : { right: Math.max(8, window.innerWidth - rect.right) }),
     ...(below ? { top: rect.bottom + 4 } : { bottom: window.innerHeight - rect.top + 4 }),
   }
-  return h('div', { ref: menu, className: 'nm-menu', role: 'menu', style },
+  const content = h('div', { ref: menu, className: `nm-menu ${className}`.trim(), role: 'menu', style },
     header ?? null,
     items.map((item, index) => item === 'sep'
       ? h('div', { key: `sep-${index}`, className: 'nm-menu-sep', role: 'separator' })
       : h('button', { key: item.id, type: 'button', role: 'menuitem', className: `nm-menu-item${item.danger ? ' nm-danger' : ''}`, onClick: () => { onClose(); item.onSelect() } },
           item.icon ?? null,
           h('span', { className: 'nm-menu-item-label' }, item.label))))
+  return align === 'end' ? createPortal(content, document.body) : content
 }
 
 /** The ⋯ button with its menu; `quiet` shows it on the row's hover only. */
-export function MoreButton({ label, items, quiet, size = 36, icon, header }: { label: string; items: (MenuChoice | 'sep')[]; quiet?: boolean; size?: number; icon?: ReactNode; header?: ReactNode }): ReactNode {
+export function MoreButton({ label, items, quiet, size = 36, icon, header, align, menuClassName }: { label: string; items: (MenuChoice | 'sep')[]; quiet?: boolean; size?: number; icon?: ReactNode; header?: ReactNode; align?: 'start' | 'end'; menuClassName?: string }): ReactNode {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null)
   const button = useRef<HTMLButtonElement | null>(null)
   return h(Fragment, null,
@@ -77,12 +98,12 @@ export function MoreButton({ label, items, quiet, size = 36, icon, header }: { l
       'aria-expanded': anchor !== null,
       onClick: (event: MouseEvent) => { event.stopPropagation(); setAnchor((current) => (current ? null : button.current)) },
     }, icon ?? h(IconMore, { size: 18 })),
-    anchor ? h(PopMenu, { anchor, items, onClose: () => setAnchor(null), header }) : null)
+    anchor ? h(PopMenu, { anchor, items, onClose: () => setAnchor(null), header, ...(align ? { align } : {}), ...(menuClassName ? { className: menuClassName } : {}) }) : null)
 }
 
 /** A centred card over the page: title row with ×, body, optional footer. */
-export function Sheet({ title, onClose, closeLabel, children, footer, wide, header }: { title: string; onClose(): void; closeLabel: string; children?: ReactNode; footer?: ReactNode; wide?: boolean; header?: ReactNode }): ReactNode {
-  return h(Modal, { open: true, onClose, title, headless: true, className: `nm-sheet-modal${wide ? ' nm-wide' : ''}` },
+export function Sheet({ title, onClose, closeLabel, children, footer, wide, header, className = '' }: { title: string; onClose(): void; closeLabel: string; children?: ReactNode; footer?: ReactNode; wide?: boolean; header?: ReactNode; className?: string }): ReactNode {
+  return h(Modal, { open: true, onClose, title, headless: true, className: `nm-sheet-modal${wide ? ' nm-wide' : ''} ${className}`.trim() },
     h('div', { className: 'nm-sheet' },
       h('div', { className: 'nm-sheet-head' },
         h('h2', { className: 'nm-sheet-title' }, title),

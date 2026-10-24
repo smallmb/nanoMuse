@@ -8,16 +8,15 @@
  * key rows and the ChatGPT sign-in are inline; and Settings → nanoMuse Cloud, under the pool
  * bar, where the rows are already on the page above.
  */
-import { createElement as h, Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
+import { createElement as h, Fragment, useState, type ReactNode } from 'react'
 import { keyUrlFor, type Capability } from '../catalogue.ts'
-import { mainland, markStarred, openStar, type AccountSheet } from './AccountPage.tsx'
+import { mainland, type AccountSheet } from './AccountPage.tsx'
 import { call, muted, row, type Translate } from './api.ts'
 import { openLink } from './bridge.ts'
 import { settingsBus } from './bus.ts'
-import { IconChevronRight, IconClose, IconCopy, IconGift, IconHeart, IconKey, IconSparkle, IconUser } from './icons.tsx'
+import { IconChevronRight, IconClose, IconCopy, IconGift, IconKey, IconSparkle, IconUser } from './icons.tsx'
 import { useLive } from './live.ts'
 import { ACCOUNT_SECTION, ChatGptRow, coverage, groupsOf, useProviders, WaysOnRows } from './OwnKey.tsx'
-import { roomsCall, type NudgeAsk } from './rooms.ts'
 
 /** `spend.guidance` (relay 0.21, contract C11): the own-key card as data. Every field optional: an older relay sends none of it. */
 export interface Guidance {
@@ -112,19 +111,6 @@ export function AllowanceWays({ t, info, sheet, exhausted, lead, inSettings = fa
   const [more, setMore] = useState(false)
   const [copied, setCopied] = useState(false)
   const { view } = useProviders(t)
-  // the host decides whether the star row is due (C1 `exhausted`); asked once per card
-  const [star, setStar] = useState(false)
-  const asked = useRef(false)
-  useEffect(() => {
-    if (!exhausted || asked.current) return
-    asked.current = true
-    let alive = true
-    roomsCall<{ ask: NudgeAsk | null }>('nudges/ask', { moment: 'exhausted' })
-      .then((r) => { if (alive && r.ask) setStar(true) })
-      .catch(() => undefined)
-    return () => { alive = false }
-  }, [exhausted])
-
   const cn = sheet ? mainland(t, sheet) : guidance?.region === 'cn' || (guidance?.region === undefined && zh)
   // the providers behind "more": the relay's list for the region when it sent one, else the
   // catalogue's; in the chat, less the ones drawn as rows just above
@@ -195,15 +181,5 @@ export function AllowanceWays({ t, info, sheet, exhausted, lead, inSettings = fa
           ? h('div', { style: row },
               h('button', { type: 'button', className: 'nm-pill nm-pill-ghost nm-pill-sm', onClick: () => void copy() }, h(IconCopy, { size: 14 }), copied ? t('inviteCopied') : t('awCopyLink')),
               h('span', { className: 'nm-way-sub', style: { ...muted, wordBreak: 'break-all' } }, link))
-          : h('div', { className: 'nm-way-sub nm-wrap' }, t('acWayInviteSub')))),
-    // the star, once, when the policy says so
-    exhausted && star
-      ? h('div', { className: 'nm-way' },
-          h('span', { className: 'nm-way-icon' }, h(IconHeart, { size: 15 })),
-          h('div', { className: 'nm-way-main' },
-            h('div', { className: 'nm-way-title' }, t('acWayStar')),
-            h('div', { style: row },
-              h('button', { type: 'button', className: 'nm-pill nm-pill-ghost nm-pill-sm', onClick: () => { openStar(); setStar(false) } }, t('starAction')),
-              h('button', { type: 'button', className: 'nm-pill nm-pill-ghost nm-pill-sm', onClick: () => { markStarred(); setStar(false) } }, t('starDone')))))
-      : null)
+          : h('div', { className: 'nm-way-sub nm-wrap' }, t('acWayInviteSub')))))
 }

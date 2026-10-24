@@ -8,7 +8,7 @@
 import { failureText } from './api.ts'
 import { createElement as h, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import type { Translate } from './api.ts'
-import { IconComment, IconExternal, IconFeed, IconHeart, IconInfo, IconRefresh, IconSliders } from './icons.tsx'
+import { IconComment, IconFeed, IconHeart, IconInfo, IconRefresh, IconSliders, IconTrash } from './icons.tsx'
 import { feedImageHint, feedLinkedBody, feedSources } from '../feed.ts'
 import { openLink } from './bridge.ts'
 import { FEED_PANEL } from './panels.ts'
@@ -85,23 +85,23 @@ export function PostCard({ t, post, lang, onDiscuss, onFail }: { t: Translate; p
     h('div', { className: 'nm-post-main' },
       h('div', { className: 'nm-post-head' },
         h('h3', { className: 'nm-post-title' }, primary ? h('a', externalLink(primary.url), post.title) : post.title),
-        h('span', { className: 'nm-post-when' }, ago(t, post.at)),
-        h(MoreButton, { label: t('more'), size: 26,
-          header: h('div', { className: 'nm-menu-meta' }, new Date(post.at).toLocaleString(lang || undefined, { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' })),
-          items: [
-          { id: 'reason', label: t('feedWhy'), icon: h(IconInfo, { size: 16 }), onSelect: () => setReason(true) },
-          'sep',
-          { id: 'delete', label: t('feedRemove'), danger: true, onSelect: remove },
-        ] })),
+        h('div', { className: 'nm-post-meta' },
+          h('span', { className: 'nm-post-when' }, ago(t, post.at)),
+          h(MoreButton, { label: t('more'), size: 26, align: 'end', menuClassName: 'nm-feed-menu',
+            header: h('div', { className: 'nm-menu-meta' }, new Date(post.at).toLocaleString(lang || undefined, { weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' })),
+            items: [
+            { id: 'reason', label: t('feedWhy'), icon: h(IconInfo, { size: 16 }), onSelect: () => setReason(true) },
+            'sep',
+            { id: 'delete', label: t('feedRemove'), icon: h(IconTrash, { size: 16 }), danger: true, onSelect: remove },
+          ] }))),
       h(Markdown, { text: feedLinkedBody(post), className: 'nm-post-body' }),
       h(PostImage, { post, t }),
       h('div', { className: 'nm-post-actions' },
         h('button', { type: 'button', className: `nm-post-action${post.liked ? ' nm-liked' : ''}`, 'aria-pressed': post.liked, 'aria-label': t('feedLike'), title: t('feedLike'), onClick: like }, h(IconHeart, { size: 18, filled: post.liked })),
         h('button', { type: 'button', className: 'nm-post-action', onClick: onDiscuss }, h(IconComment, { size: 18 }), h('span', null, t('feedDiscuss'))),
       ),
-      reason ? h(Sheet, { title: t('feedWhy'), closeLabel: t('close'), onClose: () => setReason(false) },
-        h('p', { className: 'nm-post-reason' }, post.recommendationReason?.trim() || t('feedWhyMissing')),
-        primary ? h('a', { className: 'nm-post-original', ...externalLink(primary.url) }, t('feedReadSource'), ' ', h(IconExternal, { size: 14 })) : null) : null))
+      reason ? h(Sheet, { title: t('feedWhyTitle'), closeLabel: t('close'), className: 'nm-feed-reason', onClose: () => setReason(false) },
+        h('p', { className: 'nm-post-reason' }, post.recommendationReason?.trim() || t('feedWhyMissing'))) : null))
 }
 
 function externalLink(url: string) {

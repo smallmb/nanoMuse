@@ -11,7 +11,6 @@
  * own as the face (OwnClipChooser.tsx, #324): choose, replace, or back to the default.
  */
 import { createElement as h, Fragment, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import { StarNudgeOnce } from './AccountPage.tsx'
 import { call, errorCode, type Translate, failureText } from './api.ts'
 import { useLive } from './live.ts'
 import type { Words } from './locales.ts'
@@ -305,9 +304,7 @@ export function AvatarStudioSheet({ t, initial, style: initialStyle, onClose }: 
     body = h('div', { className: 'nm-sheet-form' },
       h('div', { className: 'nm-st-moods' }, ['idle', ...MOODS].map((mood) =>
         h('div', { key: mood, className: 'nm-st-mood' }, moods[mood] ? h('img', { src: `data:image/webp;base64,${moods[mood]}`, alt: mood }) : null))),
-      h('p', { className: 'nm-sheet-lead' }, t('stDone')),
-      // the face is done: a moment of delight, and the one fair ask for a star here (once)
-      h(StarNudgeOnce, { t, moment: 'new_look' }))
+      h('p', { className: 'nm-sheet-lead' }, t('stDone')))
     footer = h('div', { className: 'nm-sheet-actions' }, h('span', { style: { flex: 1 } }), h('button', { type: 'button', className: 'nm-pill nm-pill-sm', onClick: onClose }, t('stFinish')))
   }
   return h(Fragment, null,

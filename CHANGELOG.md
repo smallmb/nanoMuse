@@ -67,6 +67,12 @@ All notable changes to nanoMuse. The format follows [Keep a Changelog](https://k
 
 ### Desktop
 
+- **Feed creation reasons use a compact rounded explanation card**, with a circular close button and readable text. Original articles remain linked from post titles.
+
+- **Feed layout follows the reference:** a larger page title aligned with post text, grouped timestamps and always-visible plain more buttons, and right-aligned menus that stay inside the viewport.
+
+- **Desktop no longer shows GitHub star reminders** in chat, account sign-in, avatar completion or low-allowance guidance. Manual links in Settings remain available.
+
 - **Gemini model discovery keeps the API key out of the URL.** Native Gemini requests send the key in the `x-goog-api-key` header instead of a query parameter; the model list and settings layout are unchanged.
 
 - **Remote task `stop` and `approve` actions verify caller identity.** A device on the hub can no longer stop a task or decide an approval card belonging to another device. `stop {call}` cancels a run only when the calling device started that call, and `approve {approval_id}` accepts decisions only from the device that originated the task run, matching the hub specification and the runtime and Android implementations.

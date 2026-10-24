@@ -7,15 +7,14 @@
  * `/sessions`, `/account-events`, `/password`, …); nothing of it is kept on the computer.
  */
 import { Button, Input } from '@deepseek-ai/dsh-client-ui-primitives'
-import { createElement as h, Fragment, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { createElement as h, Fragment, useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { allowanceInfo, AllowanceWays, type Guidance } from './AllowanceWays.tsx'
 import { call, errorStyle, muted, row, type CloudStatus, type Translate, failureText } from './api.ts'
-import { openLink } from './bridge.ts'
 import { settingsBus } from './bus.ts'
-import { IconCopy, IconHeart } from './icons.tsx'
+import { openLink } from './bridge.ts'
 import { REPO_URL } from './panels.ts'
-import { peekRooms, roomsCall, type NudgeAsk } from './rooms.ts'
-import { starText } from '../nudges.ts'
+import { peekRooms } from './rooms.ts'
+import { IconCopy } from './icons.tsx'
 
 /** `GET /v1/me`, the parts this page reads (every field optional: an older relay sends fewer). */
 export interface AccountSheet {
@@ -50,84 +49,9 @@ export function useCloudConfig(): CloudConfig {
 const yuan = (n: number | undefined | null): string => (n === undefined || n === null ? '—' : `¥${n.toFixed(n % 1 === 0 ? 0 : 2)}`)
 const when = (ts: number | null | undefined, locale: string): string => (ts ? new Date(ts * 1000).toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' }) : '—')
 
-// ---- the star, asked for at the moments the policy names (C1) ----------------------------
-
-/**
- * The host keeps the ledger and the gate (`nudges.json`, `src/nudges.ts`): how many tasks ran
- * to their end, the days the app was opened, how often a star was asked for and when. The
- * moments it cannot count itself — the account just signed in, a face just drawn, the
- * allowance used up, a goal reached — are asked for from here with `/nudges/ask`; the host
- * says yes once per cooldown and at most `max_asks` times, never after a star. The tone is a
- * thank-you, never a bill.
- */
-export type StarMoment = 'signed_in' | 'new_look' | 'exhausted' | 'goal_done'
-/** The app's own words for an ask the host granted, by its moment. */
-function momentText(t: Translate, ask: NudgeAsk): string {
-  switch (ask.moment) {
-    case 'signed_in': return t('starSignedIn')
-    case 'new_look': return t('starNewLook')
-    case 'exhausted': return t('ndExhausted')
-    case 'goal_done': return t('ndGoalDone')
-    case 'tasks': return ask.n === 1 ? t('ndTasksOne') : t('ndTasks', { n: ask.n ?? 0 })
-    case 'days_used': return ask.n === 7 ? t('ndWeek') : ask.n === 30 ? t('ndMonth') : t('ndDays', { n: ask.n ?? 0 })
-  }
-}
-/**
- * The card's body sentence: the relay's, when its policy carries one (`star.text_zh` for a
- * Chinese UI, else `star.text`), else the app's own for the moment. The title and the buttons
- * are always the app's.
- */
-export function nudgeText(t: Translate, ask: NudgeAsk): string {
-  return starText(peekRooms().nudges.policy, t('langTag') === 'zh', momentText(t, ask))
-}
-/**
- * The star is done: the person went to GitHub from any "Star on GitHub" (a card or a Settings
- * row) or said "I already starred". The host writes `starred` and drops the current ask; no
- * ask comes back on this computer, whatever the cooldown and the asks left.
- */
-export function markStarred(): void {
-  void roomsCall('nudges/starred', {}).catch(() => undefined)
-}
-/** Off to GitHub (the policy's page), and no more asking anywhere. */
+/** 保留设置页中主动打开 GitHub 的链接，不再触发或记录点星提醒。 */
 export function openStar(url?: string): void {
-  markStarred()
   openLink(url || peekRooms().nudges.policy.star.url || REPO_URL)
-}
-/** "Not now": the host forgets the current ask. */
-export function dismissStar(): void {
-  void roomsCall('nudges/dismiss', {}).catch(() => undefined)
-}
-
-/** One card: the star, a line saying why, "Star on GitHub", "Not now" and "I already starred". */
-export function StarNudge({ t, text, onDone }: { t: Translate; text: string; onDone(): void }): ReactNode {
-  return h('div', { className: 'nm-star-card', role: 'note' },
-    h('div', { className: 'nm-star-head' },
-      h('span', { className: 'nm-star-icon' }, h(IconHeart, { size: 16 })),
-      h('div', null,
-        h('div', { className: 'nm-star-title' }, t('starTitle')),
-        h('div', { className: 'nm-star-text' }, text))),
-    h('div', { className: 'nm-star-actions' },
-      h('button', { type: 'button', className: 'nm-pill nm-pill-sm', onClick: () => { openStar(); onDone() } }, t('starAction')),
-      h('button', { type: 'button', className: 'nm-pill nm-pill-ghost nm-pill-sm', onClick: () => { dismissStar(); onDone() } }, t('starLater')),
-      h('button', { type: 'button', className: 'nm-pill nm-pill-ghost nm-pill-sm', onClick: () => { markStarred(); onDone() } }, t('starDone'))))
-}
-
-/** The card for a moment, when the host grants the ask; asked once per mount, while `due`. */
-export function StarNudgeOnce({ t, moment, text, due = true }: { t: Translate; moment: StarMoment; text?: string; due?: boolean }): ReactNode {
-  const [ask, setAsk] = useState<NudgeAsk | null>(null)
-  const asked = useRef(false)
-  useEffect(() => {
-    if (!due || asked.current) return
-    asked.current = true
-    let alive = true
-    roomsCall<{ ask: NudgeAsk | null }>('nudges/ask', { moment })
-      .then((r) => { if (alive && r.ask) setAsk(r.ask) })
-      .catch(() => undefined)
-    return () => { alive = false }
-  }, [due, moment])
-  if (!ask) return null
-  // the relay's sentence first, then the caller's, then the moment's own
-  return h(StarNudge, { t, text: starText(peekRooms().nudges.policy, t('langTag') === 'zh', text ?? momentText(t, ask)), onDone: () => setAsk(null) })
 }
 
 // ---- the page ------------------------------------------------------------------------------
@@ -168,7 +92,6 @@ export function AccountPage({ t, status, locale, onEnded }: AccountPageProps): R
   const member = Boolean(a?.member ?? status.account?.member)
   return h(Fragment, null,
     error ? h('div', { style: errorStyle, role: 'alert' }, error) : null,
-    sheet ? h(StarNudgeOnce, { t, moment: 'signed_in' }) : null,
     h('h3', { style: heading }, t('acAllowance')),
     sheet ? h(Allowance, { t, sheet, member }) : h('div', { style: muted }, t('loading')),
     sheet?.invite?.code ? h(Fragment, null, h('h3', { style: heading }, t('acInvite')), h(InviteBlock, { t, invite: sheet.invite })) : null,

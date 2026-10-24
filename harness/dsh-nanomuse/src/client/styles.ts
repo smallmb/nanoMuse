@@ -1014,6 +1014,29 @@ html[data-nm-split]:not([data-nm-profile]):has(.nm-split > .nm-room-with-chat) {
 .nm-room-with-chat > .nm-room-toggle { position: absolute; top: 12px; left: 16px; z-index: 1; width: 36px; height: 36px; margin: 0; -webkit-app-region: no-drag; }
 .nm-room-with-chat > .nm-room-toggle:focus-visible { outline: 2px solid var(--nm-accent); outline-offset: 2px; }
 .nm-feed { display: flex; flex-direction: column; gap: 44px; padding-top: 14px; padding-bottom: 44px; }
+/* 动态页标题与正文对齐，设置按钮与每条动态右侧操作保持同一列。 */
+.nm-feed-room > .nm-room-head { max-width: 1000px; padding: 8px 32px 40px 52px; }
+.nm-feed-room .nm-room-title { font-size: 40px; line-height: 48px; font-weight: 700; }
+/* 设置按钮比更多按钮宽18px，右移半个宽度差，使两个图标的中心同列。 */
+.nm-feed-room .nm-round-btn { width: 44px; height: 44px; margin-right: -9px; }
+.nm-feed-room > .nm-room-body { scrollbar-gutter: stable both-edges; }
+.nm-feed-room .nm-room-inner { max-width: 1000px; padding-left: 6px; padding-right: 32px; }
+.nm-feed-room .nm-post-when { font-size: 14px; }
+.nm-post-meta { flex: none; display: flex; align-items: center; gap: 10px; min-height: 26px; white-space: nowrap; }
+.nm-feed-room .nm-post-meta .nm-more { flex: none; background: transparent; color: var(--dsw-alias-label-tertiary); opacity: 1; }
+.nm-feed-room .nm-post-meta .nm-more:hover, .nm-feed-room .nm-post-meta .nm-more[aria-expanded='true'] { background: transparent; color: var(--dsw-alias-label-primary); }
+/* 菜单通过门户挂载到页面，仍只使用动态专属样式，不影响其他页面。 */
+.nm-menu.nm-feed-menu { box-sizing: border-box; width: min(264px, calc(100vw - 16px)); min-width: 0; max-height: calc(100vh - 16px); overflow-y: auto; padding: 10px; border-radius: 18px; }
+.nm-feed-menu .nm-menu-meta { padding: 2px 8px 8px; font-size: 12px; line-height: 18px; }
+.nm-feed-menu .nm-menu-item { min-height: 40px; padding: 9px 10px; font-size: 16px; line-height: 22px; }
+.nm-feed-menu .nm-menu-sep { margin: 6px; }
+@media (max-width: 600px) {
+  .nm-feed-room > .nm-room-head { padding: 8px 20px 24px 57px; }
+  .nm-feed-room .nm-room-inner { padding-left: 20px; padding-right: 20px; }
+  .nm-feed-room .nm-room-title { font-size: 28px; line-height: 36px; }
+  .nm-feed-room .nm-post-head { flex-wrap: nowrap; }
+  .nm-post-meta { gap: 4px; }
+}
 /* 对照 Kami 使用无底色信息流，整条动态悬停时保持透明。 */
 .nm-post { display: flex; gap: 12px; padding: 0; background: transparent; }
 .nm-post:hover { background: transparent; }
@@ -1032,6 +1055,20 @@ html[data-nm-split]:not([data-nm-profile]):has(.nm-split > .nm-room-with-chat) {
 .nm-post-original:hover { text-decoration: underline; text-underline-offset: 3px; }
 .nm-post a:focus-visible { outline: 2px solid var(--nm-blue); outline-offset: 3px; }
 .nm-post-reason { margin: 0 0 14px; font-size: 14px; line-height: 1.7; white-space: pre-wrap; }
+/* 创建理由使用独立的圆角说明卡，不改变设置等其他弹窗。 */
+.nm-sheet-modal.nm-feed-reason[role='dialog'] { width: min(608px, calc(100vw - 32px)); border-radius: 40px; background: color-mix(in srgb, var(--nm-base) 92%, var(--dsw-alias-label-primary) 8%); box-shadow: 0 16px 60px rgba(0,0,0,0.25); }
+.nm-feed-reason .nm-sheet-head { padding: 18px 18px 14px 26px; gap: 16px; }
+.nm-feed-reason .nm-sheet-title { font-size: 22px; font-weight: 700; line-height: 30px; }
+.nm-feed-reason .nm-close { flex: none; width: 34px; height: 34px; border-radius: 50%; font-size: 22px; line-height: 1; }
+.nm-feed-reason .nm-sheet-body { padding: 0 26px 26px; }
+.nm-feed-reason .nm-post-reason { margin: 0; font-size: 18px; line-height: 28px; }
+@media (max-width: 600px) {
+  .nm-sheet-modal.nm-feed-reason[role='dialog'] { border-radius: 28px; }
+  .nm-feed-reason .nm-sheet-head { padding-left: 20px; gap: 10px; }
+  .nm-feed-reason .nm-sheet-title { font-size: 19px; line-height: 28px; }
+  .nm-feed-reason .nm-sheet-body { padding-left: 20px; padding-right: 20px; }
+  .nm-feed-reason .nm-post-reason { font-size: 16px; line-height: 26px; }
+}
 .nm-post-images { display: block; width: min(305px, 100%); }
 .nm-post-images img { display: block; width: 100%; aspect-ratio: 16 / 9; max-height: 230px; border-radius: 12px; object-fit: cover; }
 .nm-post-actions { display: flex; align-items: center; gap: 20px; margin-top: 7px; }

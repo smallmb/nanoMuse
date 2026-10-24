@@ -724,6 +724,12 @@ Synced conversation messages no longer render a device-model attribution beneath
 
 Assistant messages synced from another device use the same bubble background, 20 px corners and inner padding as local assistant replies.
 
+Desktop does not render automatic GitHub star reminders in chat, after sign-in, after avatar creation or when allowance runs low. Settings retain manual GitHub links.
+
+The Feed page title aligns with post text at 40 px. Timestamps and transparent more buttons form one right-hand group; Feed menus align with the button’s right edge, open below or above to fit, and close on page scrolling or window resizing. Other room layouts stay unchanged.
+
+Feed creation reasons appear in a dedicated 608 px card with 40 px corners, a round close button and 18 px body text; smaller screens use a narrower card. The original article stays linked from the post title rather than inside this explanation.
+
 ## Custom update policy
 
 The long-lived personal customization branch is `custom/personal`, tracked at `origin/custom/personal` in `smallmb/nanoMuse`. Baseline commit `cf7f65184bb10dad2d03ee9986e7a7f789ecec1a` preserves the current UI and fixes; local backup branch `backup/custom-baseline-20261024` also points to it. Do ordinary customization work on `custom/personal` and push to that branch.
