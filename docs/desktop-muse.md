@@ -697,3 +697,29 @@ Post titles keep their normal color. Body links are unwrapped before matching ti
 Switching between Feed, Ideas, Goals, Library and Devices restores scroll positions. Library search/sort and completed-goal visibility remain in memory for this window. Live connections survive brief panel switches; decoded feed images are reused by content version (up to 200 entries). Feed rows follow a transparent stream layout with no row hover background.
 
 Settings navigation highlights search matches only while a nonempty query is active, keeps the current page distinct, and separates rows with a 4 px gap.
+
+When chat, a room and the profile panel are open together, the room sits beside the profile and both reserve their combined width in chat. Unfolded assistant replies keep vertical bubble spacing and wrap long text. Profile tab switching behavior is unchanged.
+
+Conversation names appear only in the sidebar, including side chats; the conversation header keeps its navigation and avatar controls.
+
+Desktop preparation and local startup remove the host header title renderer via `harness/desktop/scripts/remove-session-title.mjs`. This does not create a hidden title node; sidebar names, header utilities and view tabs remain. The patch is idempotent and stops if the host structure changes.
+
+Selecting a sidebar room closes the profile and chat split and shows only that room. The chat entry returns to chat. Avatar controls first return to chat and then toggle the profile; profile-internal tabs keep their existing behavior.
+
+Only one assistant avatar is rendered: the profile panel takes priority over the conversation header; the rail avatar appears on standalone feature pages. Closing the profile restores the conversation avatar.
+
+The profile schedule pane follows the Kami list layout: calendar icons with yellow clock badges, blue schedule labels and cadence groups. It reads active Host schedules, including tasks not linked to goals; selecting a row opens schedule management. No sample tasks are created.
+
+Identity and other document editors occupy the area to the right of the icon rail. Opening a document closes the profile and chat split, keeps the rail available, and adds no duplicate chat list. Sidebar navigation leaves the editor through its existing save-on-unmount flow.
+
+The document header toggle opens the current conversation on the left and keeps the document on the right. Toggling again restores the full document area without remounting the editor or discarding its draft.
+
+The chat/document divider can be dragged or adjusted with the arrow keys. Chat starts at 430 px and is limited to half of the available main area; smaller windows clamp it to that half. Conversation scrollbars are hidden while wheel, touchpad and keyboard scrolling remain available.
+
+First-run assistant bubbles use the same horizontal gutters as normal conversation messages, including narrow document splits, with long text wrapping inside the bubble.
+
+The message composer uses round 34 px corners: a capsule on one line and stable rounded corners as multiline content grows, overriding the host superellipse shape.
+
+Synced conversation messages no longer render a device-model attribution beneath their text; source metadata stays unchanged.
+
+Assistant messages synced from another device use the same bubble background, 20 px corners and inner padding as local assistant replies.

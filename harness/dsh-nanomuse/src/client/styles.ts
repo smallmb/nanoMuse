@@ -259,15 +259,12 @@ html[data-nm-platform='darwin']:not([data-nm-fullscreen]) .nm-col-top { height: 
 .nm-chat-more:hover { background: var(--dsw-alias-bg-layer-3); color: var(--dsw-alias-label-primary); }
 .nm-chat-row:hover .nm-chat-title { padding-right: 22px; }
 .nm-chat-edit { flex: 1; min-width: 0; height: 30px; margin: 2px 4px; padding: 0 8px; border: 1px solid var(--nm-blue); border-radius: 7px; background: var(--nm-field); color: var(--dsw-alias-label-primary); font: inherit; font-size: 14px; outline: none; }
-/* a turn of the conversation written on another device of the account (C8): the person's bubble on the
-   right like the harness's own, the Muse's on the left, "From Pixel 8" under either (RemoteBubbles.ts) */
+/* 同步消息沿用本机会话的左右对齐，设备来源不在消息下方展示。 */
 .nm-remote { display: flex; flex-direction: column; gap: 4px; margin: 6px 0; }
 .nm-remote-user { align-items: flex-end; }
 .nm-remote-assistant { align-items: flex-start; }
 .nm-remote-bubble { max-width: 100%; padding: 10px 16px; border-radius: var(--dsw-radius-xl, 16px); font-size: var(--dsh-content-font-size, 14px); line-height: calc(22px + var(--dsh-content-font-delta, 0px)); white-space: pre-wrap; word-break: break-word; color: var(--dsw-alias-label-primary); }
 .nm-remote-user .nm-remote-bubble { background: var(--dsw-specific-bubble, var(--nm-hover)); }
-.nm-remote-assistant .nm-remote-bubble { padding-left: 0; padding-right: 0; }
-.nm-remote-from { font-size: 11px; color: var(--dsw-alias-label-tertiary); padding: 0 4px; }
 /* the other device is working on its last prompt (C9): a quiet line with a slow dot */
 .nm-remote-working { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--dsw-alias-label-tertiary); padding: 0 4px; }
 .nm-remote-working::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; animation: nm-breathe-light 4.8s ease-in-out infinite; }
@@ -332,7 +329,7 @@ html[data-nm-muse] [data-slot="conversation.header"]:has(.nm-header) ~ [data-con
 
 /* ---- the Muse conversation: the harness's DOM, Muse's shapes ----------- */
 /* The composer card becomes one pill: + | the text | send. */
-html[data-nm-muse] [data-composer-card] { display: flex !important; flex-direction: row !important; flex-wrap: wrap; align-items: flex-end; gap: 2px 4px; padding: 5px 5px 5px 6px !important; border-radius: 26px !important; background: var(--nm-field) !important; box-shadow: 0 0 0 1px var(--nm-field-border), 0 6px 24px rgba(0,0,0,0.10) !important; }
+html[data-nm-muse] [data-composer-card] { display: flex !important; flex-direction: row !important; flex-wrap: wrap; align-items: flex-end; gap: 2px 4px; padding: 5px 5px 5px 6px !important; border-radius: 34px !important; corner-shape: round !important; background: var(--nm-field) !important; box-shadow: 0 0 0 1px var(--nm-field-border), 0 6px 24px rgba(0,0,0,0.10) !important; }
 html[data-nm-muse] [data-composer-card] > [data-input-scroll] { flex: 1 1 120px; min-width: 0; order: 0; margin: 0 !important; }
 html[data-nm-muse] [data-composer-card] > [data-input-scroll] [contenteditable] { min-height: 34px !important; padding: 5px 6px 5px 8px !important; }
 html[data-nm-muse] [data-composer-card] [data-composer-placeholder] { inset: 5px 6px auto 8px !important; color: transparent !important; }
@@ -403,7 +400,11 @@ html[data-nm-muse] [data-chat-flow-kind="user"] [class*="_bubble"] a { color: in
 html[data-nm-muse] [data-chat-flow-kind="user"] [class*="_bubble"] ::selection { background: var(--nm-user-bubble-selection); color: var(--nm-user-bubble-fg); }
 html[data-nm-muse] .nm-remote-user .nm-remote-bubble { background: var(--nm-user-bubble); color: var(--nm-user-bubble-fg); }
 html[data-nm-muse] .nm-remote-user .nm-remote-bubble ::selection { background: var(--nm-user-bubble-selection); color: var(--nm-user-bubble-fg); }
-html[data-nm-muse] [data-chat-flow-kind="assistant-step"] [data-slot="conversation.chat.node"] > [class*="_root"] > [class*="_body"] { width: fit-content; max-width: 100%; box-sizing: border-box; background: var(--nm-agent-bubble); border-radius: 20px; padding: 10px 16px; }
+/* 展开后的中间回答不再依赖原折叠组的间距，连续气泡各自保留上下留白。 */
+html[data-nm-muse] [data-chat-flow-kind="assistant-step"] { min-width: 0; }
+/* 同步助手消息与本地助手回答共用完整气泡样式。 */
+html[data-nm-muse] .nm-remote-assistant .nm-remote-bubble,
+html[data-nm-muse] [data-chat-flow-kind="assistant-step"] [data-slot="conversation.chat.node"] > [class*="_root"] > [class*="_body"] { width: fit-content; min-width: 0; max-width: 100%; box-sizing: border-box; margin-block: 6px; background: var(--nm-agent-bubble); border-radius: 20px; padding: 10px 16px; overflow-wrap: anywhere; }
 html[data-nm-muse] [data-chat-flow-kind="assistant-step"] [data-slot="conversation.chat.node"] > [class*="_root"] > [class*="_body"]:empty { display: none; }
 html[data-nm-muse] [data-chat-flow-kind="assistant-step"] [data-slot="conversation.chat.node"] > [class*="_root"] > [class*="_body"] > [class*="_markdown"] > :first-child { margin-top: 0; }
 html[data-nm-muse] [data-chat-flow-kind="assistant-step"] [data-slot="conversation.chat.node"] > [class*="_root"] > [class*="_body"] > [class*="_markdown"] > :last-child { margin-bottom: 0; }
@@ -414,11 +415,7 @@ html[data-nm-muse] [data-chat-flow-kind="user"]:hover [class*="_actions"][data-c
 html[data-nm-muse] [data-chat-flow-kind="user"] [class*="_actions"][data-clock]:focus-within,
 html[data-nm-muse] [data-chat-flow-kind="turn-tail"]:hover [class*="_actions"][data-clock],
 html[data-nm-muse] [data-chat-flow-kind="turn-tail"] [class*="_actions"][data-clock]:focus-within { opacity: 1; }
-/* The session header keeps only what Muse shows up there: Invite and the corner;
-   a side chat shows its title at the left (a new one reads "New side chat"). */
-html[data-nm-muse] [data-slot="conversation.session.header"] [class*="_titleCluster"] { display: none; }
-html[data-nm-muse][data-nm-side] [data-slot="conversation.session.header"] [class*="_titleCluster"] { display: flex; }
-html[data-nm-muse][data-nm-side] [data-slot="conversation.session.header"] [class*="_crumb"] { font-size: 13px; font-weight: 500; color: var(--dsw-alias-label-secondary); background: var(--dsw-alias-bg-layer-2); border-radius: 999px; padding: 4px 12px; }
+/* 会话顶部保留操作入口，主聊天与旁聊的名称统一由侧边栏展示。 */
 html[data-nm-muse] [data-slot="conversation.session.header"] [class*="_headerActions"] { display: none; }
 html[data-nm-muse] [data-slot="conversation.session.header"] [class*="_titleRow"] { justify-content: flex-end; }
 html[data-nm-muse][data-nm-side] [data-slot="conversation.session.header"] [class*="_titleRow"] { justify-content: space-between; }
@@ -481,7 +478,17 @@ html[data-nm-room] [class*="_frame"] > [class*="_handle"] { display: none; }
 .nm-search-row-sub { font-size: 12.5px; color: var(--dsw-alias-label-tertiary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .nm-search-row-time { flex: none; font-size: 12px; color: var(--dsw-alias-label-dimmed); }
 /* the document editor */
-.nm-doc { position: fixed; inset: 0; z-index: 75; display: flex; flex-direction: column; background: var(--nm-base); color: var(--dsw-alias-label-primary); animation: nm-fade-in 140ms ease-out; }
+.nm-doc { position: fixed; inset: 0 0 0 var(--nm-rail); z-index: 75; display: flex; flex-direction: column; background: var(--nm-base); color: var(--dsw-alias-label-primary); animation: nm-fade-in 140ms ease-out; }
+/* 文档按钮展开当前会话；两栏共享主区域，编辑器保持挂载。 */
+html:has(.nm-doc-split) { --nm-doc-chat-size: clamp(min(430px, (100vw - var(--nm-rail)) * 0.5), var(--nm-doc-chat-width, 430px), (100vw - var(--nm-rail)) * 0.5); }
+.nm-doc.nm-doc-split { left: calc(var(--nm-rail) + var(--nm-doc-chat-size)); }
+html:has(.nm-doc-split) [class*="_centerCol"] { min-width: 0; padding-right: calc(100vw - var(--nm-rail) - var(--nm-doc-chat-size)); box-sizing: border-box; }
+.nm-doc-resizer { position: absolute; top: 0; bottom: 0; left: -4px; width: 8px; z-index: 2; cursor: col-resize; touch-action: none; user-select: none; }
+.nm-doc-resizer::after { content: ''; position: absolute; top: 0; bottom: 0; left: 3px; width: 1px; background: var(--nm-divider); }
+.nm-doc-resizer:hover::after, .nm-doc-resizer:focus-visible::after { width: 2px; background: var(--nm-blue); }
+/* 隐去聊天滚动条和占位槽，滚轮、触控板与键盘滚动继续生效。 */
+html[data-nm-muse] [data-conversation-scroll] { scrollbar-width: none; scrollbar-gutter: auto; }
+html[data-nm-muse] [data-conversation-scroll]::-webkit-scrollbar { display: none; width: 0; }
 .nm-doc-bar { flex: none; display: flex; align-items: center; gap: 8px; padding: 10px 14px 8px; border-bottom: 1px solid var(--nm-divider); }
 html[data-nm-platform='darwin']:not([data-nm-fullscreen]) .nm-doc-bar { padding-top: 30px; }
 .nm-doc-name { font-size: 14px; font-weight: 600; margin: 0 6px 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -589,7 +596,11 @@ html[data-nanomuse] [data-approval-key] > div > :last-child button:not(:last-chi
 /* 四个页签共用圆角层级，卡片 24px、列表 12px、按钮和导航为完整胶囊。 */
 .nm-pf { --nm-pf-card-radius: 24px; --nm-pf-row-radius: 12px; --nm-pf-pill-radius: 999px; }
 .nm-pf .nm-pill { border-radius: var(--nm-pf-pill-radius); }
-html[data-nm-profile] [class*="_centerCol"] { padding-right: var(--nm-profile-width); box-sizing: border-box; }
+html[data-nm-profile] [class*="_centerCol"] { min-width: 0; padding-right: var(--nm-profile-width); box-sizing: border-box; }
+/* 助手与聊天分栏同时打开时，共享剩余宽度，不能互相覆盖预留空间。 */
+html[data-nm-profile][data-nm-split] { --nm-split-w: calc((100vw - var(--nm-rail) - var(--nm-profile-width)) * 0.6); }
+html[data-nm-profile][data-nm-split] .nm-split { right: var(--nm-profile-width); }
+html[data-nm-profile][data-nm-split] [class*="_centerCol"] { padding-right: calc(var(--nm-profile-width) + var(--nm-split-w)); }
 @keyframes nm-slide-in { from { transform: translateX(24px); opacity: 0; } to { transform: none; opacity: 1; } }
 .nm-pf-top { position: absolute; inset: 0 0 auto; z-index: 2; box-sizing: border-box; height: 64px; min-height: 0; display: flex; align-items: flex-start; padding: 18px 16px 0; }
 html[data-nm-platform='darwin']:not([data-nm-fullscreen]) .nm-pf-top { padding-top: 18px; }
@@ -670,6 +681,13 @@ html[data-nm-platform='darwin']:not([data-nm-fullscreen]) .nm-pf-top { padding-t
 .nm-pf-reminder-recurring .nm-pf-row-icon { color: #e2e3e8; }
 .nm-pf-body-reminders .nm-pf-row-title { font-size: 14px; line-height: 20px; font-weight: 400; white-space: normal; overflow-wrap: anywhere; }
 .nm-pf-body-reminders .nm-pf-row-sub { color: #65aaf0; font-size: 12px; line-height: 18px; white-space: normal; }
+/* 对照 Kami 的计划列表：日历配黄色时钟角标，分组之间留出呼吸空间。 */
+.nm-pf-plan-group + .nm-pf-plan-group { margin-top: 24px; }
+.nm-pf-plan-group .nm-pf-day { margin: 0; }
+.nm-pf-body-reminders button.nm-pf-reminder { width: 100%; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.nm-pf-body-reminders button.nm-pf-reminder:hover { background: #ffffff05; }
+.nm-pf-calendar { position: relative; color: #e2e3e8; }
+.nm-pf-plan-clock { position: absolute; right: 0; bottom: 2px; display: grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: #f0bf00; color: #67500c; }
 .nm-pf-stack { display: flex; flex-direction: column; gap: 10px; }
 .nm-pf-label { font-size: 12px; font-weight: 600; color: var(--dsw-alias-label-tertiary); }
 .nm-pf-actions { display: flex; gap: 8px; }
@@ -990,7 +1008,7 @@ html[data-nm-platform='darwin']:not([data-nm-fullscreen]) .nm-room-top { height:
 .nm-md th { font-weight: 600; color: var(--dsw-alias-label-secondary); }
 /* feed */
 /* 四个页面共用会话开关布局，展开后仍以当前页面左上角为定位基准。 */
-html[data-nm-split]:has(.nm-split > .nm-room-with-chat) { --nm-split-w: calc((100vw - var(--nm-rail)) * 0.7); }
+html[data-nm-split]:not([data-nm-profile]):has(.nm-split > .nm-room-with-chat) { --nm-split-w: calc((100vw - var(--nm-rail)) * 0.7); }
 .nm-room-with-chat > .nm-room-top, .nm-room-with-chat > .nm-lib-main > .nm-room-top { height: 44px; }
 .nm-room-with-chat > .nm-lib-col > .nm-lib-col-top { height: 54px; }
 .nm-room-with-chat > .nm-room-toggle { position: absolute; top: 12px; left: 16px; z-index: 1; width: 36px; height: 36px; margin: 0; -webkit-app-region: no-drag; }
@@ -1474,11 +1492,12 @@ html[data-nm-platform='darwin']:not([data-nm-fullscreen]) .nm-fr-top { height: 6
 .nm-fr-granted { display: inline-flex; align-items: center; gap: 5px; font-size: 12.5px; color: #2f9e5f; }
 
 /* The first conversation: the app's opening lines as agent bubbles, and the name chooser. */
-.nm-intro-host { width: 100%; max-width: var(--dsh-chat-content-width, 760px); box-sizing: border-box; margin: 0 auto; padding: 12px 0 0; }
+/* 开场白位于消息流之外，需补上与普通消息相同的左右留白；宽屏仍对齐消息内容列。 */
+.nm-intro-host { --nm-intro-gutter: calc(var(--dsh-composer-side-clearance, 16px) + 16px); width: 100%; max-width: calc(var(--dsh-chat-content-width, 760px) + 2 * var(--nm-intro-gutter)); box-sizing: border-box; margin: 0 auto; padding: 12px var(--nm-intro-gutter) 0; }
 html[data-nm-muse] [data-conversation-scroll]:has(> .nm-intro-host):has([class*="_composerHero"]) { justify-content: flex-start; }
 html[data-nm-muse] [data-conversation-scroll]:has(> .nm-intro-host) [class*="_composerHero"] { margin-top: auto; }
 .nm-intro { display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
-.nm-intro-bubble { width: fit-content; max-width: 100%; box-sizing: border-box; background: var(--nm-agent-bubble); border-radius: 20px; padding: 10px 16px; font-size: 15px; line-height: 1.5; white-space: pre-wrap; animation: nm-rise 260ms ease-out; }
+.nm-intro-bubble { width: fit-content; min-width: 0; max-width: 100%; box-sizing: border-box; background: var(--nm-agent-bubble); border-radius: 20px; padding: 10px 16px; font-size: 15px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; animation: nm-rise 260ms ease-out; }
 .nm-naming { display: flex; flex-direction: column; gap: 8px; width: min(360px, 100%); box-sizing: border-box; margin: 8px 0; padding: 14px; border-radius: 16px; background: var(--nm-card); box-shadow: 0 0 0 1px var(--nm-divider); }
 .nm-naming-title { font-size: 13px; font-weight: 600; color: var(--dsw-alias-label-secondary); margin-bottom: 2px; }
 .nm-naming-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; box-sizing: border-box; padding: 11px 14px; border-radius: 12px; border: 1px solid var(--nm-divider); background: var(--nm-base); color: var(--dsw-alias-label-primary); font: inherit; font-size: 15px; text-align: left; cursor: pointer; transition: opacity 200ms, border-color 200ms; }

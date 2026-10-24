@@ -37,6 +37,10 @@ if ($Web) {
     }
 }
 
+# 移除宿主会话顶部名称的渲染代码，不使用 CSS 隐藏。
+& node (Join-Path $desktopDirectory 'scripts\remove-session-title.mjs') (Join-Path $desktopDirectory 'dsh')
+if ($LASTEXITCODE -ne 0) { throw '会话顶部名称补丁失败。' }
+
 Push-Location $pluginDirectory
 try {
     & pnpm.cmd build

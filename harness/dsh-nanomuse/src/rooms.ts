@@ -323,6 +323,7 @@ export interface RoomsView extends Omit<Store, 'activity'> {
   /** The chats of the batches running right now (the feed's): the chats column leaves them out. */
   batches: string[]
   automations: Record<string, GoalAutomation[]>
+  scheduled?: GoalAutomation[]
   /** Whether a model is reachable, so the empty rooms can say why they are empty. */
   ready: boolean
   /** The agent asked for the avatar studio (draw_new_look): the words and when; the window opens it once. */
@@ -343,6 +344,7 @@ interface PresetsLike {
 
 /** The harness's Schedule service, the part of it the goals use (optional at runtime). */
 interface ScheduleLike {
+  catalog?(): Promise<(ScheduleRecordLike & { status: string })[]>
   create(sessionId: SessionId, request: { prompt: string; title: string; every_seconds?: number; daily?: { time: string; time_zone: string } }): Promise<{ id: string }>
   list(request: { sessionId: SessionId }): Promise<ScheduleRecordLike[]>
   delete(request: { sessionId: SessionId; id: string }): Promise<unknown>
@@ -428,6 +430,7 @@ export default class NanomuseRooms extends Service {
   /** When the current turn's first words arrived, per goal session. */
   private readonly turnMarks = new Map<string, number>()
   private automations: Record<string, GoalAutomation[]> = {}
+  private scheduled: GoalAutomation[] | undefined
   /** The tools as the last agent saw them (the registry's views are per agent); the Connectors page reads it. */
   private toolCatalog: { name: string; description: string }[] = []
   private catalogAt = 0
@@ -501,6 +504,7 @@ export default class NanomuseRooms extends Service {
       busy: { ...this.busy },
       batches: [...this.runs.keys()],
       automations: this.automations,
+      ...(this.scheduled === undefined ? {} : { scheduled: this.scheduled }),
       ready: this.ready,
       studio: this.studio,
       firstRun: { ...this.firstRun, chips: currentSuggestions(this.firstRun, this.lang) },
@@ -1413,7 +1417,11 @@ export default class NanomuseRooms extends Service {
       const list = await schedule.list({ sessionId: goal.sessionId as SessionId }).catch(() => [])
       if (list.length) next[goal.id] = list.map((r) => ({ id: r.id, title: r.title, kind: r.kind, rule: ruleOf(r), next: r.scheduledAt }))
     }
-    if (JSON.stringify(next) === JSON.stringify(this.automations)) return
+    // 助手计划页读取整个宿主目录，包含 Feed 等不属于目标的任务。
+    const catalog = schedule.catalog ? await schedule.catalog() : undefined
+    const scheduled = catalog?.filter(row => row.status === 'active').map(row => ({ id: row.id, title: row.title, kind: row.kind, rule: ruleOf(row), next: row.scheduledAt }))
+    if (JSON.stringify(next) === JSON.stringify(this.automations) && JSON.stringify(scheduled) === JSON.stringify(this.scheduled)) return
+    this.scheduled = scheduled
     this.automations = next
     this.broadcast()
   }

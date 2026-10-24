@@ -155,6 +155,10 @@ if (!existsSync(runtimeDir)) {
   writeFileSync(join(runtimeDir, "README.txt"), "No runtime for the hands was built into this copy of nanoMuse Desktop; `nanomuse` on PATH or NANOMUSE_PY serves them.\n");
 }
 
+// 打包前移除会话顶部重复名称，保留侧边栏名称和其他头部入口。
+const { patchConversationHeader } = await import('./remove-session-title.mjs');
+patchConversationHeader(out);
+
 // ---------------------------------------------------------------- the record
 const installed = JSON.parse(readFileSync(join(out, "node_modules", "@deepseek-ai", "dsh", "package.json"), "utf8"));
 const bundled = JSON.parse(readFileSync(join(out, "node_modules", "dsh-nanomuse", "package.json"), "utf8"));

@@ -14,7 +14,7 @@ import { createElement as h, Fragment, useEffect, useRef, useState, type FormEve
 import { call, type Translate, failureText } from './api.ts'
 import { Avatar } from './Avatar.tsx'
 import { profileBus, settingsBus, useProfileOpen } from './bus.ts'
-import { IconAlarm, IconBell, IconBolt, IconCheck, IconChevronDown, IconChevronRight, IconClock, IconClose, IconFingerprint, IconHeart, IconList, IconPencil, IconShare, IconShield, IconSparkle, IconSpinner, IconSquare } from './icons.tsx'
+import { IconAlarm, IconBell, IconCalendar, IconBolt, IconCheck, IconChevronDown, IconChevronRight, IconClock, IconClose, IconFingerprint, IconHeart, IconList, IconPencil, IconShare, IconShield, IconSparkle, IconSpinner, IconSquare } from './icons.tsx'
 import { AvatarShareSheet } from './AvatarShare.tsx'
 import { studioBus } from './AvatarStudio.tsx'
 import { prefillComposer } from './composer.ts'
@@ -294,29 +294,39 @@ function Reminders({ t, name, openSchedules }: { t: Translate; name: string; ope
   const rooms = useRooms()
   const all: { goal: string; automation: GoalAutomation }[] = []
   for (const goal of rooms.goals) for (const automation of rooms.automations[goal.id] ?? []) all.push({ goal: goal.title, automation })
-  const once = all.filter((a) => !/^(daily|weekly|cron|every)/.test(a.automation.rule))
-  const recurring = all.filter((a) => /^(daily|weekly|cron|every)/.test(a.automation.rule))
-  const when = (a: GoalAutomation) => {
-    const next = Date.parse(a.next)
-    if (Number.isFinite(next)) return `${dayLabel(t, next, rooms.lang)}, ${clockLabel(next, rooms.lang)}`
-    return a.rule
+  const jobs = rooms.scheduled ?? all.map(entry => entry.automation)
+  const groupOf = (job: GoalAutomation) => {
+    if (job.kind === 'daily' || job.kind === 'weekly') return job.kind
+    const cron = job.rule.match(/^cron \d+ \d+ (\S+) (\S+) (\S+)$/)
+    if (cron?.[2] === '*') {
+      if (cron[1] === '*' && cron[3] === '*') return 'daily'
+      if (cron[1] === '*' && /^\d$/.test(cron[3] ?? '')) return 'weekly'
+      if (/^\d+$/.test(cron[1] ?? '') && cron[3] === '*') return 'monthly'
+    }
+    return 'other'
   }
-  const row = (entry: { goal: string; automation: GoalAutomation }, icon: ReactNode, kind: 'once' | 'recurring') => h('div', { key: entry.automation.id, className: `nm-pf-row nm-pf-reminder nm-pf-reminder-${kind}` },
-    h('span', { className: 'nm-pf-row-icon' }, icon),
-    h('div', { className: 'nm-pf-row-main' },
-      h('div', { className: 'nm-pf-row-title' }, entry.automation.title || entry.goal),
-      h('div', { className: 'nm-pf-row-sub' }, `${when(entry.automation)}${entry.automation.title ? ` · ${entry.goal}` : ''}`)))
-  if (all.length === 0) {
-    return h('div', { className: 'nm-pf-stack' },
-      h('p', { className: 'nm-pf-empty' }, t('pfRemindersEmpty', { name })),
-      h('button', { type: 'button', className: 'nm-pill nm-pill-ghost nm-pill-sm', onClick: openSchedules }, t('pfManageRoutines')))
+  const groups = [['daily', 'pfPlanDaily'], ['weekly', 'pfPlanWeekly'], ['monthly', 'pfPlanMonthly'], ['other', 'pfPlanOther']] as const
+  const when = (job: GoalAutomation) => {
+    const time = job.rule.match(/@(\d{2}:\d{2})/)?.[1]
+    if (time) return time
+    const next = Date.parse(job.next)
+    return job.kind === 'at' && Number.isFinite(next) ? `${dayLabel(t, next, rooms.lang)} ${clockLabel(next, rooms.lang)}` : t('pfPlanScheduled')
   }
-  return h('div', { className: 'nm-pf-rows' },
-    once.length ? h('div', { className: 'nm-pf-day' }, t('pfRemindersOnce')) : null,
-    once.map((entry) => row(entry, h(IconBell, { size: 18 }), 'once')),
-    recurring.length ? h('div', { className: 'nm-pf-day' }, t('pfRemindersDaily')) : null,
-    recurring.map((entry) => row(entry, h(IconAlarm, { size: 18 }), 'recurring')),
-    h('div', { className: 'nm-pf-foot' }, h('button', { type: 'button', className: 'nm-pill nm-pill-ghost nm-pill-sm', onClick: openSchedules }, t('pfManageRoutines'))))
+  if (!jobs.length) return h('div', { className: 'nm-pf-stack' },
+    h('p', { className: 'nm-pf-empty' }, t('pfRemindersEmpty', { name })),
+    h('button', { type: 'button', className: 'nm-pill nm-pill-ghost nm-pill-sm', onClick: openSchedules }, t('pfManageRoutines')))
+  return h('div', { className: 'nm-pf-upcoming' }, groups.map(([group, label]) => {
+    const items = jobs.filter(job => groupOf(job) === group)
+    if (!items.length) return null
+    return h('section', { key: group, className: 'nm-pf-plan-group' },
+      h('h3', { className: 'nm-pf-day' }, t(label)),
+      items.map(job => h('button', { key: job.id, type: 'button', className: 'nm-pf-row nm-pf-reminder', onClick: openSchedules },
+        h('span', { className: 'nm-pf-row-icon nm-pf-calendar' }, h(IconCalendar, { size: 31 }),
+          h('span', { className: 'nm-pf-plan-clock' }, h(IconClock, { size: 10 }))),
+        h('span', { className: 'nm-pf-row-main' },
+          h('span', { className: 'nm-pf-row-title' }, job.title),
+          h('span', { className: 'nm-pf-row-sub' }, when(job))))))
+  }))
 }
 
 function Identity({ t, name }: { t: Translate; name: string }): ReactNode {

@@ -10,6 +10,13 @@ All notable changes to nanoMuse. The format follows [Keep a Changelog](https://k
 - Reported desktop room, first-run and nudge save failures to callers, allowed subsequent saves to retry, and preserved damaged state files instead of replacing them with empty data.
 
 ### Desktop Feed
+  Synced chat messages no longer show device-model attribution below their text; synced assistant replies now use the same bubble styling as local replies.
+  The message composer now uses round capsule corners, with a stable radius for multiline input.
+  Document editing now keeps the sidebar icon rail visible and closes overlapping profile and chat split panels. Its header toggle opens the current chat beside the document without losing the editing draft; a draggable divider resizes chat from a narrow column up to half the main area, with hidden conversation scrollbars.
+  The profile schedule pane now lists active Host tasks, including independent Feed tasks, with Kami-style cadence groups and calendar/clock icons.
+  The profile, conversation and sidebar now render the assistant avatar exclusively, with the profile taking priority.
+  Sidebar rooms now close the profile and chat split; avatar controls return to chat before toggling the profile.
+  Fixed overlapping chat, room and profile columns and restored spacing between unfolded assistant bubbles. First-run bubbles now align with normal message gutters instead of touching the column edges. Conversation names now appear only in the sidebar, including side chats; the duplicate host header renderer is removed during desktop preparation instead of hidden with CSS.
   Settings navigation no longer marks every row as a search match for an empty query; highlighted rows have spacing and retain the current-page style.
   Panel switches preserve scroll and filter preferences, reuse live connections and decoded feed images; feed rows use a transparent Kami-style layout without hover blocks.
   Feed source links highlight matching title keywords within the body, replacing misplaced model-authored anchors; headings keep their normal color.

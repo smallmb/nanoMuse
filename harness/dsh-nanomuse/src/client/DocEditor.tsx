@@ -8,15 +8,16 @@
  * MEMORY.md writes back as memory lines; a Library file writes to disk.
  */
 import { failureText } from './api.ts'
-import { createElement as h, useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react'
+import { createElement as h, useCallback, useEffect, useRef, useState, type FormEvent, type PointerEvent, type ReactNode } from 'react'
 import type { Translate } from './api.ts'
 import { IconClose, IconCode, IconCopy, IconDownload, IconLayout, IconRefresh, IconTrash } from './icons.tsx'
 import { htmlToMd, mdToHtml } from './markdown-io.ts'
 import { fileUrl, roomsCall, useRooms, type DocName, type DocText } from './rooms.ts'
 import { MoreButton, type MenuChoice } from './ui.tsx'
-import { useWin, win, type OpenDoc } from './win.ts'
+import { clampDocChatWidth, useWin, win, type OpenDoc } from './win.ts'
 
 const SAVE_AFTER_MS = 900
+
 
 export interface DocEditorProps {
   t: Translate
@@ -35,6 +36,21 @@ export function makeDocEditor(t: Translate, toggleSidebar: () => void) {
 }
 
 function Editor({ t, toggleSidebar, doc }: DocEditorProps & { doc: OpenDoc }): ReactNode {
+  const { editorChat } = useWin()
+  const [chatWidth, setChatWidth] = useState(430)
+  useEffect(() => {
+    document.documentElement.style.setProperty('--nm-doc-chat-width', `${chatWidth}px`)
+    return () => { document.documentElement.style.removeProperty('--nm-doc-chat-width') }
+  }, [chatWidth])
+  const resizeChat = (width: number) => {
+    const rail = document.querySelector('.nm-rail')?.getBoundingClientRect().width ?? 78
+    setChatWidth(clampDocChatWidth(width, window.innerWidth - rail))
+  }
+  const dragChat = (event: PointerEvent<HTMLDivElement>) => {
+    if (!event.currentTarget.hasPointerCapture(event.pointerId)) return
+    const rail = document.querySelector('.nm-rail')?.getBoundingClientRect().width ?? 78
+    resizeChat(event.clientX - rail)
+  }
   const rooms = useRooms()
   const [text, setText] = useState<string | null>(null)
   const [source, setSource] = useState(false)
@@ -137,9 +153,18 @@ function Editor({ t, toggleSidebar, doc }: DocEditorProps & { doc: OpenDoc }): R
       : { id: 'delete', label: t('edDelete'), icon: h(IconTrash, { size: 16 }), danger: true, onSelect: () => { void roomsCall('library/delete', { id: doc.id }).then(close) } },
   ]
 
-  return h('section', { className: 'nm-doc', role: 'dialog', 'aria-label': name },
+  return h('section', { className: `nm-doc${editorChat ? ' nm-doc-split' : ''}`, role: 'dialog', 'aria-label': name },
+    editorChat ? h('div', { className: 'nm-doc-resizer', role: 'separator', tabIndex: 0, 'aria-orientation': 'vertical', 'aria-label': t('edResizeChat'),
+      onPointerDown: (event: PointerEvent<HTMLDivElement>) => { if (event.button === 0) { event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId) } },
+      onPointerMove: dragChat,
+      onPointerUp: (event: PointerEvent<HTMLDivElement>) => { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId) },
+      onKeyDown: (event: React.KeyboardEvent<HTMLDivElement>) => {
+        if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return
+        event.preventDefault()
+        resizeChat(chatWidth + (event.key === 'ArrowLeft' ? -20 : 20))
+      } }) : null,
     h('div', { className: 'nm-doc-bar', 'data-window-drag': true },
-      h('button', { type: 'button', className: 'nm-icon-btn', title: t('menuCollapse'), 'aria-label': t('menuCollapse'), onClick: toggleSidebar }, h(IconLayout, { size: 18 })),
+      h('button', { type: 'button', className: 'nm-icon-btn', title: t(editorChat ? 'splitClose' : 'splitOpen'), 'aria-label': t(editorChat ? 'splitClose' : 'splitOpen'), 'aria-expanded': editorChat, onClick: () => { if (!editorChat) toggleSidebar(); win.docChat(!editorChat) } }, h(IconLayout, { size: 18 })),
       h('div', { className: 'nm-doc-name', title: item?.path ?? name }, name),
       editable && !source
         ? h('div', { className: 'nm-doc-tools', role: 'toolbar' }, toolbar.map((b) => h('button', { key: b.id, type: 'button', className: `nm-doc-tool nm-doc-tool-${b.id}`, title: b.title, 'aria-label': b.title, onMouseDown: (e: MouseEvent) => e.preventDefault(), onClick: b.run }, b.label)))

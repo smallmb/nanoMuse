@@ -6,6 +6,7 @@
 import { createElement as h, useEffect, useRef, useState, type ReactNode } from 'react'
 import type { Translate } from './api.ts'
 import { Avatar } from './Avatar.tsx'
+import { useProfileOpen } from './bus.ts'
 import { Toast } from '@deepseek-ai/dsh-client-ui-primitives'
 import { aboutBus } from './About.tsx'
 import { bridge, openLink } from './bridge.ts'
@@ -127,13 +128,14 @@ function CornerMenu({ anchor, items, onClose }: { anchor: HTMLElement; items: (M
 }
 
 export function MuseSidebar(props: MuseSidebarProps): ReactNode {
+  const profileOpen = useProfileOpen()
   const { collapsed, width, t, renderSlot, startSession, toggleSidebar, selectPanel, openSettings: openSettingsHook, openProfile, openSearch, issuesUrl, chatActions, usePanels, usePanelInfo, useShortcuts, useSessions, useSessionStatus, useWorkspaces } = props
   const live = useLive()
   const update = useWindowsUpdates()
   const updateView = update ? updatePresentation(update, t) : null
   const updateDot = update === null ? Boolean(live.update?.newer) : updateView?.dot === true
   const prefs = usePrefs()
-  const { recent, split } = useWin()
+  const { recent, split, editor, editorChat } = useWin()
   const panels = usePanels((rows) => rows)
   const active = usePanelInfo((info) => info.activePanelId)
   const settingsShortcut = useShortcuts((rows) => rows.find((row) => row.id === 'settings.open'))
@@ -222,7 +224,8 @@ export function MuseSidebar(props: MuseSidebarProps): ReactNode {
   // the column collapsed. The brand mark stays mounted (hidden) for the accent and
   // keep-awake effects it carries. Devices moved to Settings → Devices.
   const busy = typeof useSessions === 'function' ? useSessions((state) => state.ids.some((id) => state.byId[id]?.running === true)) : false
-  const faceOnRail = collapsed || active !== null
+  // 头像优先显示在助手面板，其次会话顶部，功能页才使用侧栏头像。
+  const faceOnRail = !profileOpen && (active !== null || editor !== null) && split === null && !editorChat
   const openRecent = (doc: RecentDoc) => {
     win.openDoc(doc.key.startsWith('own:') ? { kind: 'own', doc: doc.key.slice(4) as 'identity' | 'soul' | 'memory' } : { kind: 'library', id: doc.key.slice(4) })
     win.touchRecent(doc.key, doc.name)
@@ -261,7 +264,7 @@ export function MuseSidebar(props: MuseSidebarProps): ReactNode {
   const browser = prefs.showHarness || typeof useSessions !== 'function'
   // In a room (Feed, Ideas, Goals, Library…) Muse shows only the rail: the room has the
   // rest of the window, and its own top-left toggle brings the chat back beside it.
-  const roomMode = (active !== null || split !== null) && !browser
+  const roomMode = (active !== null || split !== null || editor !== null) && !browser
   useEffect(() => {
     if (roomMode) document.documentElement.dataset['nmRoom'] = ''
     else delete document.documentElement.dataset['nmRoom']

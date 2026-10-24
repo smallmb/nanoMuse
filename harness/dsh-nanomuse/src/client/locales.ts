@@ -107,7 +107,6 @@ export const en = {
   syncSide: 'Also sync side chats',
   syncSideWhy: "Off: side chats stay on this device. On: this device's side chats go to the account and the other devices' side chats come here.",
   // under a turn written on another device of the account (C8)
-  chFrom: 'From {device}',
   // under the other device's last prompt while it works (C9)
   chWorking: '{device} is working…',
   // the capsule
@@ -1035,6 +1034,7 @@ export const en = {
   searchNone: 'Nothing matches',
   // the split pane and recent documents
   splitPane: 'Beside the chat',
+  edResizeChat: 'Resize chat width',
   splitClose: 'Hide the chat',
   splitOpen: 'Open the chat beside this',
   catOther: 'Other',
@@ -1054,8 +1054,11 @@ export const en = {
   // the profile drawer, Muse's four tabs
   pfApprovalLog: 'What you allowed and refused',
   pfRemindersEmpty: 'No reminders yet. Ask {name} to remind you of something, or set a goal with a check-in.',
-  pfRemindersOnce: 'One-time',
-  pfRemindersDaily: 'Recurring',
+  pfPlanDaily: 'Daily',
+  pfPlanWeekly: 'Weekly',
+  pfPlanMonthly: 'Monthly',
+  pfPlanOther: 'Other schedules',
+  pfPlanScheduled: 'As scheduled',
   pfDocUntouched: 'Not edited yet',
   pfEdit: 'Edit',
   pfDocOpen: 'Open with care',
@@ -1588,7 +1591,6 @@ export const zh: typeof en = {
   syncNotReady: '同步还没就绪，稍后再试。',
   syncSide: '同时同步旁聊',
   syncSideWhy: '关：旁聊只留在本机。开：本机的旁聊上传到账号，其他设备的旁聊也会同步过来。',
-  chFrom: '来自 {device}',
   chWorking: '{device} 正在处理…',
   capsuleHands: '操作屏幕',
   capsuleStop: '停止',
@@ -2506,6 +2508,7 @@ export const zh: typeof en = {
   searchNone: '没有匹配的内容',
   // the split pane and recent documents
   splitPane: '聊天旁边',
+  edResizeChat: '调整聊天宽度',
   splitClose: '收起对话',
   splitOpen: '在旁边打开对话',
   catOther: '其他',
@@ -2525,8 +2528,11 @@ export const zh: typeof en = {
   // the profile drawer, Muse's four tabs
   pfApprovalLog: '你允许和拒绝过的',
   pfRemindersEmpty: '还没有提醒。让 {name} 到点提醒你一件事，或者给目标设个进度确认。',
-  pfRemindersOnce: '一次性',
-  pfRemindersDaily: '重复',
+  pfPlanDaily: '每日',
+  pfPlanWeekly: '每周',
+  pfPlanMonthly: '每月',
+  pfPlanOther: '其他计划',
+  pfPlanScheduled: '按计划',
   pfDocUntouched: '还没编辑过',
   pfEdit: '编辑',
   pfDocOpen: '请谨慎访问',

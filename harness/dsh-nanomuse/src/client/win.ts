@@ -6,6 +6,7 @@
  * the panels and the sidebar write it through the functions below.
  */
 import { useSyncExternalStore } from 'react'
+import { profileBus } from './bus.ts'
 import type { DocName } from './rooms.ts'
 
 /** A document open in the editor: one of the agent's own, or a Library file. */
@@ -22,6 +23,7 @@ export interface WinState {
   /** The room shown beside the chat, or null. */
   split: string | null
   editor: OpenDoc | null
+  editorChat: boolean
   search: boolean
   recent: RecentDoc[]
   /** The chat on screen, as the session-scoped seats report it. */
@@ -30,6 +32,12 @@ export interface WinState {
 
 const RECENT_KEY = 'nanomuse.recentDocs'
 const RECENT_MAX = 4
+
+// 窄窗口优先保证两栏平分；宽窗口聊天最窄 430px，最宽为可用区域的一半。
+export function clampDocChatWidth(width: number, available: number): number {
+  const maximum = Math.max(0, available / 2)
+  return Math.min(maximum, Math.max(Math.min(430, maximum), width))
+}
 
 function readRecent(): RecentDoc[] {
   try {
@@ -40,7 +48,7 @@ function readRecent(): RecentDoc[] {
   }
 }
 
-let state: WinState = { split: null, editor: null, search: false, recent: readRecent(), current: null }
+let state: WinState = { split: null, editor: null, editorChat: false, search: false, recent: readRecent(), current: null }
 const listeners = new Set<() => void>()
 
 function set(patch: Partial<WinState>): void {
@@ -69,8 +77,12 @@ export const win = {
     if (state.current !== sessionId) set({ current: sessionId })
   },
   openDoc(doc: OpenDoc | null): void {
-    set({ editor: doc })
+    // 文档占据导航右侧主区域，打开时收起助手面板及聊天分栏。
+    if (doc) profileBus.close()
+    set({ editor: doc, editorChat: false, ...(doc ? { split: null } : {}) })
   },
+  // 文档分栏独立于功能页分栏，切换时不卸载编辑器或丢弃草稿。
+  docChat(on: boolean): void { set({ editorChat: on }) },
   search(open: boolean): void {
     set({ search: open })
   },

@@ -11,6 +11,7 @@ import { createElement as h, Fragment, useEffect, useRef, useState, type ReactNo
 import { dismissStar, markStarred, nudgeText, openStar } from './AccountPage.tsx'
 import type { Translate } from './api.ts'
 import { Avatar, motionStatus, type Mood } from './Avatar.tsx'
+import { useProfileOpen } from './bus.ts'
 import { describeCall } from './Capsule.tsx'
 import { IconCheck, IconChevronLeft, IconHeart, IconMenu, IconSpinner } from './icons.tsx'
 import { useLive } from './live.ts'
@@ -42,6 +43,7 @@ export interface MuseHeaderProps {
 }
 
 export function MuseHeader({ t, openProfile, useSessionStatus }: MuseHeaderProps): ReactNode {
+  const profileOpen = useProfileOpen()
   const live = useLive()
   const rooms = useRooms()
   const prefs = usePrefs()
@@ -143,7 +145,8 @@ export function MuseHeader({ t, openProfile, useSessionStatus }: MuseHeaderProps
       ? h('button', { type: 'button', className: 'nm-header-back nm-header-chats', 'aria-label': t('railChats'), title: t('splitClose'), onClick: () => nav.split(null) }, h(IconMenu, { size: 18 }), h('span', null, t('railChats')))
       : side ? h('button', { type: 'button', className: 'nm-header-back', 'aria-label': t('chMain'), title: t('chMain'), onClick: () => nav.openSession(main) }, h(IconChevronLeft, { size: 18 })) : null,
     h('div', { className: 'nm-header', role: 'status', 'aria-live': 'polite' },
-      h('button', { type: 'button', className: `nm-header-face${running ? ' nm-live' : waiting ? ' nm-wait' : ''}`, 'aria-label': live.profile.name || t('brand'), title: t('railProfile'), onClick: openProfile },
+      // 助手面板已经展示头像时，不再创建会话头像节点。
+      profileOpen ? null : h('button', { type: 'button', className: `nm-header-face${running ? ' nm-live' : waiting ? ' nm-wait' : ''}`, 'aria-label': live.profile.name || t('brand'), title: t('railProfile'), onClick: openProfile },
         h(Avatar, { size: 44, profile: live.profile, mood })),
       h('div', { className: 'nm-header-name' }, live.profile.name || t('brand')),
       toast

@@ -194,6 +194,7 @@ export interface Rooms {
   /** The chats of the batches running right now (the feed's): not listed, not searched. */
   batches: string[]
   automations: Record<string, GoalAutomation[]>
+  scheduled?: GoalAutomation[]
   ready: boolean
   studio: { description: string; style: string; at: number }
   firstRun: FirstRun

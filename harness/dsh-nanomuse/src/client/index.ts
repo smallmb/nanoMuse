@@ -281,8 +281,17 @@ export function apply(ctx: ClientContext): void {
   // A room opened from the rail fills the main area; the split (a room beside
   // the chat) ends with it.
   const selectPanel = (id: string | null): void => {
+    win.openDoc(null)
+    // 侧边入口只展示目标页面，不沿用上一个页面的助手面板或聊天分栏。
+    profileBus.close()
     win.split(null)
     layout.selectPanel(id)
+  }
+  const openProfile = (): void => {
+    // 头像始终以聊天为背景，再切换助手面板，避免覆盖其他功能页。
+    const wasOpen = profileBus.isOpen()
+    selectPanel(null)
+    if (!wasOpen) profileBus.open()
   }
   const sidebarInjected = () => ({
     startSession: () => { workspaces.startSession() },
@@ -290,8 +299,8 @@ export function apply(ctx: ClientContext): void {
     selectPanel,
     openSettings,
     openSection: (id: string) => { shell.openSection(id) },
-    openProfile: () => { profileBus.toggle() },
-    openSearch: () => { win.search(true) },
+    openProfile,
+    openSearch: () => { selectPanel(null); win.search(true) },
     issuesUrl: ISSUES_URL,
     chatActions,
     hooks: { panels, shortcuts: shortcuts.catalog },
@@ -390,7 +399,7 @@ export function apply(ctx: ClientContext): void {
   }
   slots.inject('conversation.header.leading', () =>
     slots.register({ name: 'conversation.header.leading', locale: 'nanomuse' }, ({ useSessionStatus }: { useSessionStatus?: UseSessionStatus }) =>
-      h(MuseHeader, { t, stop, openProfile: () => { profileBus.toggle() }, useSessionStatus })))
+      h(MuseHeader, { t, stop, openProfile, useSessionStatus })))
 
   // Invite, at the top right of a chat; the profile drawer over the frame.
   const InviteButton = makeInviteButton(t)
@@ -437,7 +446,7 @@ export function apply(ctx: ClientContext): void {
   slots.inject('conversation.input.dock', () =>
     slots.register({ name: 'conversation.input.dock', id: 'nanomuse.headsup', order: -10, locale: 'nanomuse' }, () => h(AllowanceHeadsUp, { t })))
   // The document editor (IDENTITY / SOUL / MEMORY and Library texts) and ⌘K search, over the frame.
-  const DocEditor = makeDocEditor(t, () => { layout.toggleSidebar() })
+  const DocEditor = makeDocEditor(t, () => { profileBus.close(); win.split(null); layout.selectPanel(null) })
   slots.inject('shell.overlay', () =>
     slots.register({ name: 'shell.overlay', id: 'nanomuse.docs', locale: 'nanomuse' }, DocEditor))
   slots.inject('shell.overlay', () =>

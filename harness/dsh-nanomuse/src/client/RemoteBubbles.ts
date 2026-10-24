@@ -66,15 +66,13 @@ function el(tag: string, className: string, text?: string): HTMLElement {
   return node
 }
 
-function bubble(t: Translate, row: RemoteRow): HTMLElement {
+function bubble(row: RemoteRow): HTMLElement {
   const root = el('div', `nm-remote nm-remote-${row.role}`)
   root.setAttribute(KEY, nodeKey(row.id))
   root.setAttribute('data-nm-remote-mid', row.mid)
   const body = el('div', 'nm-remote-bubble', row.text)
   root.append(body)
-  const from = el('div', 'nm-remote-from', t('chFrom', { device: row.deviceName || row.device || '?' }))
-  if (row.at > 0) from.title = new Date(row.at).toLocaleString()
-  root.append(from)
+  // 会话只展示消息正文，设备来源保留在数据中，不创建额外的型号标签。
   return root
 }
 
@@ -147,7 +145,11 @@ export function renderRemoteBubbles(t: Translate): () => void {
     const rows = new Map<string, HTMLElement>()
     for (const node of content.querySelectorAll<HTMLElement>('[data-chat-node-key]')) rows.set(node.getAttribute('data-chat-node-key') ?? '', node)
     const bubbles = new Map<string, HTMLElement>()
-    for (const node of content.querySelectorAll<HTMLElement>('.nm-remote')) bubbles.set(node.getAttribute(KEY) ?? '', node)
+    for (const node of content.querySelectorAll<HTMLElement>('.nm-remote')) {
+      // 升级时复用旧气泡前移除历史来源节点，避免文案键删除后残留 chFrom。
+      for (const label of node.querySelectorAll('.nm-remote-from')) label.remove()
+      bubbles.set(node.getAttribute(KEY) ?? '', node)
+    }
     const knownPrompts = new Set(remote.prompts ?? [])
     for (const line of remote.lines) if (line.before) knownPrompts.add(line.before)
     let firstUnseenPrompt: HTMLElement | undefined
@@ -170,7 +172,7 @@ export function renderRemoteBubbles(t: Translate): () => void {
         row.style.display = 'none'
       }
       let shown = bubbles.get(key)
-      if (!shown) shown = bubble(t, line)
+      if (!shown) shown = bubble(line)
       let anchor = line.before ? rows.get(line.before) : undefined
       if (!anchor && line.before && remote.prompts) {
         const idx = remote.prompts.indexOf(line.before)
