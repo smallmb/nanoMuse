@@ -61,12 +61,16 @@ All notable changes to nanoMuse. The format follows [Keep a Changelog](https://k
 
 ### Runtime
 
+- **Local runtime reliability on Windows:** loopback requests and build health checks bypass environment proxies; command-line and bridge output uses UTF-8; writes to an extra root on another drive report success correctly; local model endpoints provide clearer discovery failures.
+
 - **A skill's files are listed when its folder sits under a dotted path.** The list of scripts, references and assets compared the absolute path, so a skill under `~/.local`, `~/.config` or any pytest tmp directory came back empty while the skill itself loaded; it now compares the path relative to the skill folder.
 - **Changing the provider no longer sends the previous provider's key.** The vault names one chat key, so the key saved for one provider was the only key there; switching to another provider with the key field left empty kept the reference, and the new provider was sent the previous provider's key while the form still said a key was present. The request failed with a refusal from a key that was never the right one. The reference is now dropped when the address the slot points at changes, and the app says there is no key instead. Saving the same provider still keeps the key. Switching away and back asks for the key again, either way.
 
 ### Web
 
 ### Desktop
+
+- **Startup retries a temporarily busy profile link** for about one second after an in-app update instead of immediately failing.
 
 - **Feed creation reasons use a compact rounded explanation card**, with a circular close button and readable text. Original articles remain linked from post titles.
 
