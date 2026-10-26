@@ -504,6 +504,8 @@ nanoMuse 不替智能体保存任何密码，消息通过手机 App 的通知到
 
 动态创建理由使用独立的 608 像素说明卡、40 像素圆角、圆形关闭按钮与 18 像素正文，小屏自动缩窄。理由弹窗不再显示阅读原文，原文仍由帖子标题打开。
 
+登录时的验证码错误、过期、密码错误及发送频率限制等提示跟随界面语言。仅调整错误文案，账号、会话及动态页的布局保持不变。
+
 ## 定制版本更新策略 {#custom-update-policy}
 
 长期定制分支为 `custom/personal`，跟踪个人仓库 `smallmb/nanoMuse` 的 `origin/custom/personal`。基准提交 `cf7f65184bb10dad2d03ee9986e7a7f789ecec1a` 保存当前界面与修复，本地备份分支 `backup/custom-baseline-20261024` 也指向该版本。日常定制在 `custom/personal` 上进行，并推送到同名远程分支。

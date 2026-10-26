@@ -70,6 +70,8 @@ All notable changes to nanoMuse. The format follows [Keep a Changelog](https://k
 
 ### Desktop
 
+- **Sign-in failures use the selected language**, including incorrect or expired codes, wrong passwords and temporary limits. Existing account and conversation layouts are unchanged.
+
 - **Startup retries a temporarily busy profile link** for about one second after an in-app update instead of immediately failing.
 
 - **Feed creation reasons use a compact rounded explanation card**, with a circular close button and readable text. Original articles remain linked from post titles.
@@ -89,6 +91,8 @@ All notable changes to nanoMuse. The format follows [Keep a Changelog](https://k
 ### iOS
 
 ### Project
+
+- Provider catalogue checks ignore LF/CRLF differences while still rejecting changed content; generated copies use LF.
 
 ## [1.0.6] - 2026-10-23 · Beacon
 
