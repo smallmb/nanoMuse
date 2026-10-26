@@ -113,7 +113,8 @@ async def test_shell_and_python(tmp_path: Path):
     assert r.ok and "hi" in r.output and "[stderr]" in r.output
     r = await shell.execute(command="exit 3")
     assert r.error == "exit code 3"
-    r = await shell.execute(command="sleep 5", timeout=1)
+    # 使用 Python 等待，避免依赖 Windows 默认没有的 sleep 命令。
+    r = await shell.execute(command=f'"{sys.executable}" -c "import time; time.sleep(5)"', timeout=1)
     assert r.error and "timed out" in r.error
     r = await shell.execute(command="echo ok", timeout="sixty")  # type: ignore[arg-type]
     assert r.ok, "a timeout the model wrote as words falls back to the default"
